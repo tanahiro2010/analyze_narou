@@ -3,16 +3,17 @@ package gpt
 import (
 	"context"
 	"fmt"
+
 	"github.com/sashabaranov/go-openai"
 )
 
 type OpenAIConfig struct {
 	ApiKey string
-	Model  openai.Model
+	Model  string
 }
 type OpenAIClient struct {
 	client *openai.Client
-	model  openai.Model
+	model  string
 }
 
 func NewOpenAIClient(config OpenAIConfig) *OpenAIClient {
@@ -26,7 +27,7 @@ func (c *OpenAIClient) Chat(prompts []openai.ChatCompletionMessage) ([]openai.Ch
 	res, err := c.client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model:    c.model.ID,
+			Model:    c.model,
 			Messages: prompts,
 		},
 	)
