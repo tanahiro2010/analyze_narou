@@ -1,0 +1,3 @@
+services:
+  bot:
+    image: narou_analyzer:latest
