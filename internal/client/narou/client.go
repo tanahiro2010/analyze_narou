@@ -31,11 +31,12 @@ func NewNarouClient(config NarouConfig) *NarouClient {
 }
 
 func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
-	url := &url.Values{}
-	url.Add("ncode", ncode)
-	url.Add("out", "json")
+	param := &url.Values{}
+	param.Add("ncode", ncode)
+	param.Add("out", "json")
 
-	req, _ := http.NewRequest(http.MethodGet, c.narouURL+"?"+url.Encode(), nil)
+	apiUrl := c.narouURL + "novelapi/api/?" + param.Encode()
+	req, _ := http.NewRequest(http.MethodGet, apiUrl, nil)
 	req.Header = c.header
 
 	httpResp, err := c.client.Do(req)
@@ -54,6 +55,23 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 		return nil, err
 	}
 
-	novel.UnmarshalJSON(buf.Bytes())
+	err = novel.UnmarshalJSON(buf.Bytes())
+	if err != nil {
+		fmt.Printf("Error unmarshaling JSON: %v\n", err)
+		return nil, err
+	}
+
 	return novel, nil
+}
+
+func (c *NarouClient) GetRankings(bigGenre BigGenre) (any, error) {
+	param := &url.Values{}
+	param.Add("biggenre", fmt.Sprintf("%d", bigGenre))
+	param.Add("out", "json")
+
+	apiUrl := c.narouURL + "rank/rankget/?" + param.Encode()
+	req, _ := http.NewRequest(http.MethodGet, apiUrl, nil)
+	req.Header = c.header
+
+	return nil, nil
 }
