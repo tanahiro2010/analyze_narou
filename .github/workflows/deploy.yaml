@@ -1,0 +1,4 @@
+name: Auto Deploy
+on: push
+
+jobs:
