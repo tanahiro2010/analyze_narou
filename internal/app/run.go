@@ -1,10 +1,8 @@
 package app
 
 type Config struct {
-	narouUrl string
-
-	openAiEndpoint string
-	apiKey         string
+	NarouUrl     string
+	OpenAIApiKey string
 }
 
 func Run(config Config) error {
