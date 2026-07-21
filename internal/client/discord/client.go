@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type DiscordClientConfig struct {
+type DiscordConfig struct {
 	WebhookURL string
 	Timeout    time.Duration
 }
@@ -24,7 +24,7 @@ type WebhookMessage struct {
 	Content   string `json:"content"`
 }
 
-func NewDiscordClient(config DiscordClientConfig) *DiscordClient {
+func NewDiscordClient(config DiscordConfig) *DiscordClient {
 	httpClient := &http.Client{
 		Timeout: config.Timeout,
 	}

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"analyze_narou/internal/client/discord"
 	"analyze_narou/internal/client/gpt"
 
 	"github.com/sashabaranov/go-openai"
@@ -24,6 +25,7 @@ func Run(config Config) error {
 
 	discordClient := discord.NewDiscordClient(discord.DiscordConfig{
 		WebhookURL: config.DiscordWebhookURL,
+		Timeout:    10,
 	})
 	return nil
 }
