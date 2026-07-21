@@ -13,19 +13,18 @@ type Config struct {
 	DiscordWebhookURL string
 }
 
-func Run(config Config) error {
+func Run(config Config) {
 	openaiClient := gpt.NewOpenAIClient(gpt.OpenAIConfig{
 		Model:  openai.GPT3Dot5Turbo,
 		ApiKey: config.OpenAIApiKey,
 	})
 
 	narouClient := narou.NewNarouClient(narou.NarouConfig{
-		Endpoint: config.NarouUrl,
+		NarouURL: config.NarouUrl,
 	})
 
 	discordClient := discord.NewDiscordClient(discord.DiscordConfig{
 		WebhookURL: config.DiscordWebhookURL,
 		Timeout:    10,
 	})
-	return nil
 }
