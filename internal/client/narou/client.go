@@ -30,13 +30,8 @@ func NewNarouClient(config NarouConfig) *NarouClient {
 	}
 }
 
-func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
-	param := &url.Values{}
-	param.Add("ncode", ncode)
-	param.Add("out", "json")
-
-	apiUrl := c.narouURL + "novelapi/api/?" + param.Encode()
-	req, _ := http.NewRequest(http.MethodGet, apiUrl, nil)
+func (c *NarouClient) getRequest(url string) (*http.Response, error) {
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header = c.header
 
 	httpResp, err := c.client.Do(req)
@@ -45,11 +40,27 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 		return nil, err
 	}
 
+	return httpResp, nil
+}
+
+func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
+	param := &url.Values{}
+	param.Add("ncode", ncode)
+	param.Add("out", "json")
+
+	apiUrl := c.narouURL + "novelapi/api/?" + param.Encode()
+	httpResp, _ := c.getRequest(apiUrl)
+
 	defer httpResp.Body.Close()
 
 	novel := &Novel{}
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(httpResp.Body)
+	_, err := buf.ReadFrom(httpResp.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %v\n", err)
+		return nil, err
+	}
+
 	if err := json.Unmarshal(buf.Bytes(), novel); err != nil {
 		fmt.Printf("Error decoding JSON: %v\n", err)
 		return nil, err
@@ -70,8 +81,9 @@ func (c *NarouClient) GetRankings(bigGenre BigGenre) (any, error) {
 	param.Add("out", "json")
 
 	apiUrl := c.narouURL + "rank/rankget/?" + param.Encode()
-	req, _ := http.NewRequest(http.MethodGet, apiUrl, nil)
-	req.Header = c.header
+	httpResp, _ := c.getRequest(apiUrl)
+
+	defer httpResp.Body.Close()
 
 	return nil, nil
 }
