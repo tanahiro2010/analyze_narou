@@ -49,10 +49,6 @@ func (g BigGenre) IsNone() bool {
 	return g == BigGenreNone
 }
 
-func (g BigGenre) List() []BigGenre {
-	return BigGenres[:]
-}
-
 // String は、大ジャンルの日本語名を返します。
 func (g BigGenre) String() string {
 	switch g {
@@ -151,10 +147,6 @@ func (g Genre) IsValid() bool {
 
 func (g Genre) IsNone() bool {
 	return g == GenreNone
-}
-
-func (g Genre) List() []Genre {
-	return Genres[:]
 }
 
 // String は、ジャンルの日本語名を返します。
