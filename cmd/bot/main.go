@@ -2,16 +2,18 @@ package main
 
 import (
 	"analyze_narou/internal/app"
+	"analyze_narou/internal/client/narou"
 	"os"
 )
 
 func main() {
-
 	config := app.Config{
-		os.Getenv("NAROU_URL"),
-		os.Getenv("OPENAI_API_KEY"),
-		os.Getenv("DISCORD_WEBHOOK_URL"),
+		NarouUrl:          os.Getenv("NAROU_URL"),
+		OpenAIApiKey:      os.Getenv("OPENAI_API_KEY"),
+		DiscordWebhookURL: os.Getenv("DISCORD_WEBHOOK_URL"),
 	}
 
-	app.Run(config)
+	mode := narou.RankingModeDaily // You can change this to the desired ranking mode
+
+	app.Run(config, mode)
 }
