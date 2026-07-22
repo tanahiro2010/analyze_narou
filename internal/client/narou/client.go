@@ -19,6 +19,16 @@ type NarouClient struct {
 	client   *http.Client
 }
 
+type RankingMode string
+
+const (
+	RankingModeDaily     RankingMode = "daily"
+	RankingModeWeekly    RankingMode = "weekly"
+	RankingModeMonthly   RankingMode = "monthly"
+	RankingModeQuarterly RankingMode = "quarterly"
+	RankingModeYearly    RankingMode = "yearly"
+)
+
 func NewNarouClient(config NarouConfig) *NarouClient {
 	header := http.Header{}
 	header.Add("User-Agent", config.UserAgent)
@@ -79,7 +89,7 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 	return novel, nil
 }
 
-func (c *NarouClient) GetRanking(bigGenre BigGenre) (*RankingResult, error) {
+func (c *NarouClient) GetRanking(bigGenre BigGenre, mode RankingMode) (*RankingResult, error) {
 	param := &url.Values{}
 	param.Add("biggenre", fmt.Sprintf("%d", bigGenre))
 	param.Add("out", "json")
