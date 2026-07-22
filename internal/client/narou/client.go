@@ -41,6 +41,7 @@ func NewNarouClient(config NarouConfig) *NarouClient {
 }
 
 func (c *NarouClient) getRequest(url string) (*http.Response, error) {
+	fmt.Printf("Making GET request to: %s\n", url)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header = c.header
 
