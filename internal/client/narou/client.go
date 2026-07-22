@@ -49,13 +49,17 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 	param.Add("out", "json")
 
 	apiUrl := c.narouURL + "novelapi/api/?" + param.Encode()
-	httpResp, _ := c.getRequest(apiUrl)
+	httpResp, err := c.getRequest(apiUrl)
+	if err != nil {
+		fmt.Printf("Error making request in GetNovel: %v\n", err)
+		return nil, err
+	}
 
 	defer httpResp.Body.Close()
 
 	novel := &Novel{}
 	buf := new(bytes.Buffer)
-	_, err := buf.ReadFrom(httpResp.Body)
+	_, err = buf.ReadFrom(httpResp.Body)
 	if err != nil {
 		fmt.Printf("Error reading response body: %v\n", err)
 		return nil, err
@@ -81,7 +85,11 @@ func (c *NarouClient) GetRankings(bigGenre BigGenre) (any, error) {
 	param.Add("out", "json")
 
 	apiUrl := c.narouURL + "rank/rankget/?" + param.Encode()
-	httpResp, _ := c.getRequest(apiUrl)
+	httpResp, err := c.getRequest(apiUrl)
+	if err != nil {
+		fmt.Printf("Error making request in GetRanking: %v\n", err)
+		return nil, err
+	}
 
 	defer httpResp.Body.Close()
 
