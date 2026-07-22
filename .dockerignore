@@ -1,0 +1,7 @@
+.git
+.github
+.idea
+.env.*
+.gocache
+Dockerfile
+docker-compose.yaml
