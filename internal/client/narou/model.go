@@ -36,15 +36,6 @@ var BigGenres = [7]BigGenre{
 	BigGenreOther,
 }
 
-func (g BigGenre) IsValid() bool {
-	for _, bg := range BigGenres {
-		if g == bg {
-			return true
-		}
-	}
-	return false
-}
-
 func (g BigGenre) IsNone() bool {
 	return g == BigGenreNone
 }
@@ -134,15 +125,6 @@ var Genres = [22]Genre{
 	GenreEssay,
 	GenreReplay,
 	GenreOther,
-}
-
-func (g Genre) IsValid() bool {
-	for _, genre := range Genres {
-		if g == genre {
-			return true
-		}
-	}
-	return false
 }
 
 func (g Genre) IsNone() bool {
