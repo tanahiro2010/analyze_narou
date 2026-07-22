@@ -36,6 +36,23 @@ var BigGenres = [7]BigGenre{
 	BigGenreOther,
 }
 
+func (g BigGenre) IsValid() bool {
+	for _, bg := range BigGenres {
+		if g == bg {
+			return true
+		}
+	}
+	return false
+}
+
+func (g BigGenre) IsNone() bool {
+	return g == BigGenreNone
+}
+
+func (g BigGenre) List() []BigGenre {
+	return BigGenres[:]
+}
+
 // String は、大ジャンルの日本語名を返します。
 func (g BigGenre) String() string {
 	switch g {
@@ -121,6 +138,23 @@ var Genres = [22]Genre{
 	GenreEssay,
 	GenreReplay,
 	GenreOther,
+}
+
+func (g Genre) IsValid() bool {
+	for _, genre := range Genres {
+		if g == genre {
+			return true
+		}
+	}
+	return false
+}
+
+func (g Genre) IsNone() bool {
+	return g == GenreNone
+}
+
+func (g Genre) List() []Genre {
+	return Genres[:]
 }
 
 // String は、ジャンルの日本語名を返します。
