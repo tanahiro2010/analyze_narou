@@ -79,7 +79,7 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 	return novel, nil
 }
 
-func (c *NarouClient) GetRankings(bigGenre BigGenre) (any, error) {
+func (c *NarouClient) GetRanking(bigGenre BigGenre) (any, error) {
 	param := &url.Values{}
 	param.Add("biggenre", fmt.Sprintf("%d", bigGenre))
 	param.Add("out", "json")
