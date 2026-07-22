@@ -79,7 +79,7 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 	return novel, nil
 }
 
-func (c *NarouClient) GetRanking(bigGenre BigGenre) (any, error) {
+func (c *NarouClient) GetRanking(bigGenre BigGenre) (*RankingResult, error) {
 	param := &url.Values{}
 	param.Add("biggenre", fmt.Sprintf("%d", bigGenre))
 	param.Add("out", "json")
@@ -93,5 +93,25 @@ func (c *NarouClient) GetRanking(bigGenre BigGenre) (any, error) {
 
 	defer httpResp.Body.Close()
 
-	return nil, nil
+	rankingResult := &RankingResult{}
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(httpResp.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %v\n", err)
+		return nil, err
+	}
+
+	if err := json.Unmarshal(buf.Bytes(), rankingResult); err != nil {
+		fmt.Printf("Error decoding JSON: %v\n", err)
+		return nil, err
+	}
+
+	err = rankingResult.UnmarshalJSON(buf.Bytes())
+	if err != nil {
+		fmt.Printf("Error unmarshaling JSON: %v\n", err)
+		return nil, err
+	}
+
+	return rankingResult, nil
 }
