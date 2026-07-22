@@ -26,6 +26,16 @@ const (
 	BigGenreOther      BigGenre = 99
 )
 
+var BigGenres = [7]BigGenre{
+	BigGenreNone,
+	BigGenreRomance,
+	BigGenreFantasy,
+	BigGenreLiterature,
+	BigGenreSF,
+	BigGenreNonGenre,
+	BigGenreOther,
+}
+
 // String は、大ジャンルの日本語名を返します。
 func (g BigGenre) String() string {
 	switch g {
@@ -81,6 +91,37 @@ const (
 	GenreReplay    Genre = 9904
 	GenreOther     Genre = 9999
 )
+
+var Genres = [22]Genre{
+	GenreNone,
+
+	GenreIsekaiRomance,
+	GenreRealRomance,
+
+	GenreHighFantasy,
+	GenreLowFantasy,
+
+	GenrePureLiterature,
+	GenreHumanDrama,
+	GenreHistory,
+	GenreMystery,
+	GenreHorror,
+	GenreAction,
+	GenreComedy,
+
+	GenreVRGame,
+	GenreSpace,
+	GenreScienceFiction,
+	GenrePanic,
+
+	GenreNonGenre,
+
+	GenreFairyTale,
+	GenrePoetry,
+	GenreEssay,
+	GenreReplay,
+	GenreOther,
+}
 
 // String は、ジャンルの日本語名を返します。
 func (g Genre) String() string {
