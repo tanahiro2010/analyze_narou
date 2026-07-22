@@ -139,3 +139,11 @@ func ParseTime(value string) (time.Time, error) {
 
 	return parsed, nil
 }
+
+func (r *RankingResult) UnmarshalJSON(data []byte) error {
+	var items []RankingItem
+	if err := json.Unmarshal(data, &items); err != nil {
+		return fmt.Errorf("decode ranking items: %w", err)
+	}
+	return nil
+}

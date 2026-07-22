@@ -321,3 +321,23 @@ func (n Novel) IsOngoingSerial() bool {
 	return n.NovelType == NovelTypeSerial &&
 		n.End == EndOngoing
 }
+
+type RankingItem struct {
+	Ncode string `json:"ncode"`
+	Pt    int    `json:"pt"`
+	Rank  int    `json:"rank"`
+}
+
+type RankingResult []RankingItem
+
+func (r RankingResult) Len() int {
+	return len(r)
+}
+
+func (r RankingResult) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+func (r RankingResult) Less(i, j int) bool {
+	return r[i].Rank < r[j].Rank
+}
