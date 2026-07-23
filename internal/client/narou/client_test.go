@@ -188,8 +188,8 @@ func TestGetRankingWithNovelAPIDecodesNovelAPIResponse(t *testing.T) {
 			t.Fatalf("order = %q, want weeklypoint", got)
 		}
 
-		if got := r.URL.Query().Get("lim"); got != "500" {
-			t.Fatalf("lim = %q, want 500", got)
+		if got := r.URL.Query().Get("lim"); got != "100" {
+			t.Fatalf("lim = %q, want 100", got)
 		}
 
 		if got := r.URL.Query().Get("out"); got != "json" {
@@ -221,8 +221,9 @@ func TestGetRankingWithNovelAPIDecodesNovelAPIResponse(t *testing.T) {
 	defer server.Close()
 
 	client := NewNarouClient(NarouConfig{
-		NarouURL:  server.URL + "/",
-		UserAgent: "test",
+		NarouURL:     server.URL + "/",
+		UserAgent:    "test",
+		RankingLimit: 100,
 	})
 
 	ranking, err := client.GetRankingWithNovelAPI(BigGenreFantasy, RankingModeWeekly)
