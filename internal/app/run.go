@@ -19,10 +19,16 @@ type Config struct {
 }
 
 func Run(config Config, mode narou.RankingMode) {
-	openaiClient := gpt.NewOpenAIClient(gpt.OpenAIConfig{
-		Model:  openai.GPT3Dot5Turbo,
-		ApiKey: config.OpenAIApiKey,
-	})
+	var analyzer *analytics.Analyzer
+	if config.OpenAIApiKey != "" {
+		openaiClient := gpt.NewOpenAIClient(gpt.OpenAIConfig{
+			Model:  openai.GPT3Dot5Turbo,
+			ApiKey: config.OpenAIApiKey,
+		})
+		analyzer = analytics.NewAnalyzer(openaiClient)
+	} else {
+		analyzer = analytics.NewAnalyzer(nil)
+	}
 
 	narouClient := narou.NewNarouClient(narou.NarouConfig{
 		NarouURL:  config.NarouUrl,
@@ -34,7 +40,6 @@ func Run(config Config, mode narou.RankingMode) {
 		Timeout:    10,
 	})
 
-	analyzer := analytics.NewAnalyzer(*openaiClient)
 	log := logger.NewWebhookLogger(*discordClient)
 
 	var genreAnalyzeResult []analytics.GenreAnalyzeResult
@@ -49,6 +54,8 @@ func Run(config Config, mode narou.RankingMode) {
 			fmt.Println("Continuing to next genre...")
 			continue
 		}
+
+		fmt.Printf("Ranking for genre %s: %+v\n", genre, *ranking)
 
 		var novels []narou.Novel
 
