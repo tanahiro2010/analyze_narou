@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -96,5 +97,79 @@ func TestGetNovelReturnsErrorForEmptyNovelResponse(t *testing.T) {
 
 	if _, err := client.GetNovel("N0000AA"); err == nil {
 		t.Fatal("expected error for empty novel response")
+	}
+}
+
+func TestGetNovelReturnsErrorForInvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{`)
+	}))
+	defer server.Close()
+
+	client := NewNarouClient(NarouConfig{
+		NarouURL:  server.URL + "/",
+		UserAgent: "test",
+	})
+
+	if _, err := client.GetNovel("N0000AA"); err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+}
+
+func TestGetRankingDecodesRankingResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rank/rankget/" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+
+		if got := r.URL.Query().Get("biggenre"); got != "2" {
+			t.Fatalf("biggenre = %q, want 2", got)
+		}
+
+		if got := r.URL.Query().Get("rtype"); got != "20260723-d" {
+			t.Fatalf("rtype = %q, want 20260723-d", got)
+		}
+
+		fmt.Fprint(w, `[{"ncode":"N1","pt":100,"rank":1},{"ncode":"N2","pt":90,"rank":2}]`)
+	}))
+	defer server.Close()
+
+	client := NewNarouClient(NarouConfig{
+		NarouURL:  server.URL + "/",
+		UserAgent: "test",
+	})
+
+	ranking, err := client.GetRanking(BigGenreFantasy, "20260723", RankingModeDaily)
+	if err != nil {
+		t.Fatalf("GetRanking returned error: %v", err)
+	}
+
+	if len(*ranking) != 2 {
+		t.Fatalf("len(ranking) = %d, want 2", len(*ranking))
+	}
+
+	if (*ranking)[0].Ncode != "N1" || (*ranking)[0].Pt != 100 || (*ranking)[0].Rank != 1 {
+		t.Fatalf("unexpected first ranking: %+v", (*ranking)[0])
+	}
+}
+
+func TestGetRankingReturnsErrorForInvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{`)
+	}))
+	defer server.Close()
+
+	client := NewNarouClient(NarouConfig{
+		NarouURL:  server.URL + "/",
+		UserAgent: "test",
+	})
+
+	_, err := client.GetRanking(BigGenreFantasy, "20260723", RankingModeDaily)
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+
+	if !strings.Contains(err.Error(), "unexpected end of JSON input") {
+		t.Fatalf("error = %q, want unexpected end of JSON input", err)
 	}
 }
