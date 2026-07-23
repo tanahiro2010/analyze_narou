@@ -145,5 +145,7 @@ func (r *RankingResult) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &items); err != nil {
 		return fmt.Errorf("decode ranking items: %w", err)
 	}
+	*r = items
+
 	return nil
 }
