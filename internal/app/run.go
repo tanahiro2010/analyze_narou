@@ -7,6 +7,7 @@ import (
 	"analyze_narou/internal/client/narou"
 	"analyze_narou/internal/logger"
 	"fmt"
+	"time"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -24,7 +25,8 @@ func Run(config Config, mode narou.RankingMode) {
 	})
 
 	narouClient := narou.NewNarouClient(narou.NarouConfig{
-		NarouURL: config.NarouUrl,
+		NarouURL:  config.NarouUrl,
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
 	})
 
 	discordClient := discord.NewDiscordClient(discord.DiscordConfig{
@@ -38,7 +40,10 @@ func Run(config Config, mode narou.RankingMode) {
 	var genreAnalyzeResult []analytics.GenreAnalyzeResult
 
 	for _, genre := range narou.BigGenres {
-		ranking, err := narouClient.GetRanking(genre, mode)
+		date := time.Date(2026, time.April, 1, 0, 0, 0, 0, time.UTC)
+		formatedDate := fmt.Sprintf("%02d", date.Year()) + fmt.Sprintf("%02d", int(date.Month())) + fmt.Sprintf("%02d", date.Day())
+
+		ranking, err := narouClient.GetRanking(genre, formatedDate, mode)
 		if err != nil {
 			fmt.Printf("Error getting ranking: %s\n", err)
 			fmt.Println("Continuing to next genre...")
