@@ -149,3 +149,14 @@ func (r *RankingResult) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+func (r *RankingWithNovelAPIResult) UnmarshalJSON(data []byte) error {
+	var response Response
+	if err := json.Unmarshal(data, &response); err != nil {
+		return fmt.Errorf("decode ranking with novelapi response: %w", err)
+	}
+
+	*r = RankingWithNovelAPIResult(response.Novels)
+
+	return nil
+}

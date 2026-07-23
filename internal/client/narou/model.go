@@ -341,3 +341,9 @@ func (r RankingResult) Swap(i, j int) {
 func (r RankingResult) Less(i, j int) bool {
 	return r[i].Rank < r[j].Rank
 }
+
+type RankingWithNovelAPIResult []Novel
+
+func (r RankingWithNovelAPIResult) Len() int {
+	return len(r)
+}

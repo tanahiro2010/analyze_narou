@@ -119,3 +119,40 @@ func TestRankingResultUnmarshalJSON(t *testing.T) {
 		t.Fatalf("unexpected first ranking item: %+v", ranking[0])
 	}
 }
+
+func TestRankingWithNovelAPIResultUnmarshalJSON(t *testing.T) {
+	body := `[
+		{"allcount":2},
+		{"title":"first","ncode":"N1","novel_type":1,"weekly_point":120},
+		{"title":"second","ncode":"N2","noveltype":2,"weekly_point":90}
+	]`
+
+	var ranking RankingWithNovelAPIResult
+	if err := json.Unmarshal([]byte(body), &ranking); err != nil {
+		t.Fatalf("json.Unmarshal returned error: %v", err)
+	}
+
+	if len(ranking) != 2 {
+		t.Fatalf("len(ranking) = %d, want 2", len(ranking))
+	}
+
+	if ranking[0].NCode != "N1" || ranking[0].WeeklyPoint != 120 {
+		t.Fatalf("unexpected first ranking novel: %+v", ranking[0])
+	}
+
+	if ranking[1].NovelType != NovelTypeShort {
+		t.Fatalf("NovelType = %v, want %v", ranking[1].NovelType, NovelTypeShort)
+	}
+}
+
+func TestRankingWithNovelAPIResultUnmarshalJSONReturnsResponseError(t *testing.T) {
+	var ranking RankingWithNovelAPIResult
+	err := json.Unmarshal([]byte(`[{"allcount":1}, []]`), &ranking)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if !strings.Contains(err.Error(), "decode ranking with novelapi response") {
+		t.Fatalf("error = %q, want ranking with novelapi context", err)
+	}
+}

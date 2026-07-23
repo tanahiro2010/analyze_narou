@@ -173,3 +173,110 @@ func TestGetRankingReturnsErrorForInvalidJSON(t *testing.T) {
 		t.Fatalf("error = %q, want unexpected end of JSON input", err)
 	}
 }
+
+func TestGetRankingWithNovelAPIDecodesNovelAPIResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/novelapi/api/" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+
+		if got := r.URL.Query().Get("biggenre"); got != "2" {
+			t.Fatalf("biggenre = %q, want 2", got)
+		}
+
+		if got := r.URL.Query().Get("order"); got != "weeklypoint" {
+			t.Fatalf("order = %q, want weeklypoint", got)
+		}
+
+		if got := r.URL.Query().Get("lim"); got != "500" {
+			t.Fatalf("lim = %q, want 500", got)
+		}
+
+		if got := r.URL.Query().Get("out"); got != "json" {
+			t.Fatalf("out = %q, want json", got)
+		}
+
+		fmt.Fprint(w, `[
+			{"allcount":2},
+			{
+				"title":"First Novel",
+				"ncode":"N1",
+				"biggenre":2,
+				"genre":201,
+				"novel_type":1,
+				"end":1,
+				"weekly_point":120
+			},
+			{
+				"title":"Second Novel",
+				"ncode":"N2",
+				"biggenre":2,
+				"genre":201,
+				"novel_type":1,
+				"end":1,
+				"weekly_point":90
+			}
+		]`)
+	}))
+	defer server.Close()
+
+	client := NewNarouClient(NarouConfig{
+		NarouURL:  server.URL + "/",
+		UserAgent: "test",
+	})
+
+	ranking, err := client.GetRankingWithNovelAPI(BigGenreFantasy, RankingModeWeekly)
+	if err != nil {
+		t.Fatalf("GetRankingWithNovelAPI returned error: %v", err)
+	}
+
+	if len(*ranking) != 2 {
+		t.Fatalf("len(ranking) = %d, want 2", len(*ranking))
+	}
+
+	if (*ranking)[0].NCode != "N1" || (*ranking)[0].WeeklyPoint != 120 {
+		t.Fatalf("unexpected first novel: %+v", (*ranking)[0])
+	}
+}
+
+func TestGetRankingWithNovelAPIReturnsErrorForInvalidMode(t *testing.T) {
+	client := NewNarouClient(NarouConfig{
+		NarouURL:  "https://example.test/",
+		UserAgent: "test",
+	})
+
+	_, err := client.GetRankingWithNovelAPI(BigGenreFantasy, RankingMode("unknown"))
+	if err == nil {
+		t.Fatal("expected error for invalid ranking mode")
+	}
+
+	if !strings.Contains(err.Error(), "unsupported ranking mode") {
+		t.Fatalf("error = %q, want unsupported ranking mode", err)
+	}
+}
+
+func TestRankingModeNovelAPIOrder(t *testing.T) {
+	tests := []struct {
+		mode RankingMode
+		want string
+	}{
+		{mode: RankingModeDaily, want: "dailypoint"},
+		{mode: RankingModeWeekly, want: "weeklypoint"},
+		{mode: RankingModeMonthly, want: "monthlypoint"},
+		{mode: RankingModeQuarterly, want: "quarterpoint"},
+		{mode: RankingModeYearly, want: "yearlypoint"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got, err := tt.mode.novelAPIOrder()
+			if err != nil {
+				t.Fatalf("novelAPIOrder returned error: %v", err)
+			}
+
+			if got != tt.want {
+				t.Fatalf("novelAPIOrder() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

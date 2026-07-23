@@ -29,6 +29,23 @@ const (
 	RankingModeYearly    RankingMode = "y"
 )
 
+func (m RankingMode) novelAPIOrder() (string, error) {
+	switch m {
+	case RankingModeDaily:
+		return "dailypoint", nil
+	case RankingModeWeekly:
+		return "weeklypoint", nil
+	case RankingModeMonthly:
+		return "monthlypoint", nil
+	case RankingModeQuarterly:
+		return "quarterpoint", nil
+	case RankingModeYearly:
+		return "yearlypoint", nil
+	default:
+		return "", fmt.Errorf("unsupported ranking mode for novelapi: %s", m)
+	}
+}
+
 func NewNarouClient(config NarouConfig) *NarouClient {
 	header := http.Header{}
 	header.Add("User-Agent", config.UserAgent)
@@ -114,6 +131,43 @@ func (c *NarouClient) GetRanking(bigGenre BigGenre, startDate string, mode Ranki
 		return nil, err
 	}
 
+	if err := json.Unmarshal(buf.Bytes(), rankingResult); err != nil {
+		fmt.Printf("Error decoding JSON: %v\n", err)
+		return nil, err
+	}
+
+	return rankingResult, nil
+}
+
+func (c *NarouClient) GetRankingWithNovelAPI(bigGenre BigGenre, mode RankingMode) (*RankingWithNovelAPIResult, error) {
+	order, err := mode.novelAPIOrder()
+	if err != nil {
+		return nil, err
+	}
+
+	param := &url.Values{}
+	param.Add("biggenre", fmt.Sprintf("%d", bigGenre))
+	param.Add("lim", "500")
+	param.Add("order", order)
+	param.Add("out", "json")
+
+	apiUrl := c.narouURL + "novelapi/api/?" + param.Encode()
+	httpResp, err := c.getRequest(apiUrl)
+	if err != nil {
+		fmt.Printf("Error making request in GetRankingWithNovelAPI: %v\n", err)
+		return nil, err
+	}
+
+	defer httpResp.Body.Close()
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(httpResp.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %v\n", err)
+		return nil, err
+	}
+
+	rankingResult := &RankingWithNovelAPIResult{}
 	if err := json.Unmarshal(buf.Bytes(), rankingResult); err != nil {
 		fmt.Printf("Error decoding JSON: %v\n", err)
 		return nil, err
