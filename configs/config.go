@@ -4,8 +4,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/sashabaranov/go-openai"
 )
 
 var CONFIG = Load()
@@ -15,7 +13,7 @@ const (
 	DefaultNarouUserAgent    = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 	DefaultNarouRankingLimit = 100
 	DefaultOpenAIBaseURL     = "https://api.deniai.app/v1"
-	DefaultOpenAIModel       = openai.GPT3Dot5Turbo
+	DefaultOpenAIModel       = "openai/gpt-5.2"
 	DefaultDiscordTimeout    = 10 * time.Second
 )
 
