@@ -8,3 +8,4 @@ services:
       - .env
     environment:
       NAROU_URL: ${NAROU_URL:-https://api.syosetu.com/}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deniai.app/v1}

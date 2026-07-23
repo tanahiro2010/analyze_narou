@@ -16,8 +16,9 @@ func Run(config Config, mode narou.RankingMode) {
 	var analyzer *analytics.Analyzer
 	if config.OpenAIApiKey != "" {
 		openaiClient := gpt.NewOpenAIClient(gpt.OpenAIConfig{
-			Model:  config.OpenAIModel,
-			ApiKey: config.OpenAIApiKey,
+			ApiKey:  config.OpenAIApiKey,
+			BaseURL: config.OpenAIBaseURL,
+			Model:   config.OpenAIModel,
 		})
 		analyzer = analytics.NewAnalyzer(openaiClient)
 	} else {

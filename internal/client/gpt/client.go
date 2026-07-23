@@ -8,8 +8,9 @@ import (
 )
 
 type OpenAIConfig struct {
-	ApiKey string
-	Model  string
+	ApiKey  string
+	BaseURL string
+	Model   string
 }
 type OpenAIClient struct {
 	client *openai.Client
@@ -17,8 +18,13 @@ type OpenAIClient struct {
 }
 
 func NewOpenAIClient(config OpenAIConfig) *OpenAIClient {
+	openAIConfig := openai.DefaultConfig(config.ApiKey)
+	if config.BaseURL != "" {
+		openAIConfig.BaseURL = config.BaseURL
+	}
+
 	return &OpenAIClient{
-		client: openai.NewClient(config.ApiKey),
+		client: openai.NewClientWithConfig(openAIConfig),
 		model:  config.Model,
 	}
 }

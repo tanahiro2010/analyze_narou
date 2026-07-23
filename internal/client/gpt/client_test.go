@@ -11,8 +11,9 @@ import (
 
 func TestNewOpenAIClient(t *testing.T) {
 	client := NewOpenAIClient(OpenAIConfig{
-		ApiKey: "test-api-key",
-		Model:  openai.GPT3Dot5Turbo,
+		ApiKey:  "test-api-key",
+		BaseURL: "https://api.example.test/v1",
+		Model:   openai.GPT3Dot5Turbo,
 	})
 
 	if client == nil {
@@ -60,13 +61,11 @@ func TestChatSendsPromptAndReturnsResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := openai.DefaultConfig("test-api-key")
-	config.BaseURL = server.URL + "/v1"
-
-	client := &OpenAIClient{
-		client: openai.NewClientWithConfig(config),
-		model:  "test-model",
-	}
+	client := NewOpenAIClient(OpenAIConfig{
+		ApiKey:  "test-api-key",
+		BaseURL: server.URL + "/v1",
+		Model:   "test-model",
+	})
 
 	responses, err := client.Chat([]openai.ChatCompletionMessage{
 		{Role: openai.ChatMessageRoleUser, Content: "hello"},
@@ -98,13 +97,11 @@ func TestChatReturnsWrappedError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := openai.DefaultConfig("test-api-key")
-	config.BaseURL = server.URL + "/v1"
-
-	client := &OpenAIClient{
-		client: openai.NewClientWithConfig(config),
-		model:  "test-model",
-	}
+	client := NewOpenAIClient(OpenAIConfig{
+		ApiKey:  "test-api-key",
+		BaseURL: server.URL + "/v1",
+		Model:   "test-model",
+	})
 
 	if _, err := client.Chat([]openai.ChatCompletionMessage{
 		{Role: openai.ChatMessageRoleUser, Content: "hello"},
