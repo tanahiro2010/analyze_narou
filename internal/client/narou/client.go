@@ -147,7 +147,7 @@ func (c *NarouClient) GetRankingWithNovelAPI(bigGenre BigGenre, mode RankingMode
 
 	param := &url.Values{}
 	param.Add("biggenre", fmt.Sprintf("%d", bigGenre))
-	param.Add("lim", "500")
+	param.Add("lim", "100")
 	param.Add("order", order)
 	param.Add("out", "json")
 

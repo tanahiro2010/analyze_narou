@@ -45,22 +45,9 @@ func Run(config Config, mode narou.RankingMode) {
 	var genreAnalyzeResult []analytics.GenreAnalyzeResult
 
 	for _, genre := range narou.BigGenres {
-		date := time.Now()
-		switch mode {
-		case narou.RankingModeWeekly:
-			date = date.AddDate(0, 0, -7)
-		case narou.RankingModeMonthly:
-			date = date.AddDate(0, -1, 0)
-		case narou.RankingModeQuarterly:
-			date = date.AddDate(0, -3, 0)
-		case narou.RankingModeYearly:
-			date = date.AddDate(-1, 0, 0)
-		}
-		formatedDate := fmt.Sprintf("%02d", date.Year()) + fmt.Sprintf("%02d", int(date.Month())) + fmt.Sprintf("%02d", date.Day())
+		fmt.Printf("Getting ranking for genre %s with mode %s\n", genre, mode)
 
-		fmt.Printf("Getting ranking for genre %s on date %s with mode %s\n", genre, formatedDate, mode)
-
-		ranking, err := narouClient.GetRanking(genre, formatedDate, mode)
+		ranking, err := narouClient.GetRankingWithNovelAPI(genre, mode)
 		if err != nil {
 			fmt.Printf("Error getting ranking: %s\n", err)
 			fmt.Println("Continuing to next genre...")
@@ -69,19 +56,7 @@ func Run(config Config, mode narou.RankingMode) {
 
 		fmt.Printf("Ranking for genre %s: %+v\n", genre, *ranking)
 
-		var novels []narou.Novel
-
-		for _, item := range *ranking {
-			novel, _ := narouClient.GetNovel(item.Ncode)
-			if novel == nil {
-				fmt.Printf("Error getting novel for ncode %s\n", item.Ncode)
-				continue
-			}
-
-			novels = append(novels, *novel)
-		}
-
-		result, err := analyzer.GenreAnalyze(novels)
+		result, err := analyzer.GenreAnalyze(*ranking)
 		if err != nil {
 			fmt.Printf("Error analyzing genre %s: %s\n", genre, err)
 			continue
