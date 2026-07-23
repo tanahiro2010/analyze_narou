@@ -14,9 +14,13 @@ import (
 func TestRunFetchesRankingsAndNovelsForEachBigGenre(t *testing.T) {
 	var rankingRequests atomic.Int32
 	var novelRequests atomic.Int32
+	var webhookRequests atomic.Int32
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case "/webhook":
+			webhookRequests.Add(1)
+			w.WriteHeader(http.StatusNoContent)
 		case "/rank/rankget/":
 			rankingRequests.Add(1)
 			if got := r.URL.Query().Get("out"); got != "json" {
@@ -53,7 +57,7 @@ func TestRunFetchesRankingsAndNovelsForEachBigGenre(t *testing.T) {
 	Run(Config{
 		NarouUrl:          server.URL + "/",
 		OpenAIApiKey:      "",
-		DiscordWebhookURL: "https://example.invalid/webhook",
+		DiscordWebhookURL: server.URL + "/webhook",
 	}, narou.RankingModeDaily)
 
 	if got := rankingRequests.Load(); got != int32(len(narou.BigGenres)) {
@@ -62,5 +66,9 @@ func TestRunFetchesRankingsAndNovelsForEachBigGenre(t *testing.T) {
 
 	if got := novelRequests.Load(); got != int32(len(narou.BigGenres)) {
 		t.Fatalf("novel requests = %d, want %d", got, len(narou.BigGenres))
+	}
+
+	if got := webhookRequests.Load(); got != int32(len(narou.BigGenres)+1) {
+		t.Fatalf("webhook requests = %d, want %d", got, len(narou.BigGenres)+1)
 	}
 }

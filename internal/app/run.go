@@ -37,7 +37,7 @@ func Run(config Config, mode narou.RankingMode) {
 
 	discordClient := discord.NewDiscordClient(discord.DiscordConfig{
 		WebhookURL: config.DiscordWebhookURL,
-		Timeout:    10,
+		Timeout:    10 * time.Second,
 	})
 
 	log := logger.NewWebhookLogger(*discordClient)
@@ -76,7 +76,9 @@ func Run(config Config, mode narou.RankingMode) {
 		}
 
 		genreAnalyzeResult = append(genreAnalyzeResult, result)
-		log.GenreAnalyzeResult(result)
+		if err := log.GenreAnalyzeResult(result); err != nil {
+			fmt.Printf("Error logging genre analysis result: %s\n", err)
+		}
 	}
 
 	allAnalyzeResult, err := analyzer.AllAnalyze(genreAnalyzeResult)
@@ -86,5 +88,7 @@ func Run(config Config, mode narou.RankingMode) {
 	}
 
 	fmt.Printf("All genres analyzed: %s\n", allAnalyzeResult)
-	log.AllAnalyzeResult(allAnalyzeResult)
+	if err := log.AllAnalyzeResult(allAnalyzeResult); err != nil {
+		fmt.Printf("Error logging all analysis result: %s\n", err)
+	}
 }

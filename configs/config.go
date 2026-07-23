@@ -5,8 +5,12 @@ import (
 	"os"
 )
 
-var CONFIG = app.Config{
-	NarouUrl:          os.Getenv("NAROU_URL"),
-	OpenAIApiKey:      os.Getenv("OPENAI_API_KEY"),
-	DiscordWebhookURL: os.Getenv("DISCORD_WEBHOOK_URL"),
+var CONFIG = Load()
+
+func Load() app.Config {
+	return app.Config{
+		NarouUrl:          os.Getenv("NAROU_URL"),
+		OpenAIApiKey:      os.Getenv("OPENAI_API_KEY"),
+		DiscordWebhookURL: os.Getenv("DISCORD_WEBHOOK_URL"),
+	}
 }
