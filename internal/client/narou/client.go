@@ -9,14 +9,16 @@ import (
 )
 
 type NarouConfig struct {
-	NarouURL  string
-	UserAgent string
+	NarouURL     string
+	UserAgent    string
+	RankingLimit int
 }
 
 type NarouClient struct {
-	narouURL string
-	header   http.Header
-	client   *http.Client
+	narouURL     string
+	rankingLimit int
+	header       http.Header
+	client       *http.Client
 }
 
 type RankingMode string
@@ -51,9 +53,10 @@ func NewNarouClient(config NarouConfig) *NarouClient {
 	header.Add("User-Agent", config.UserAgent)
 
 	return &NarouClient{
-		narouURL: config.NarouURL,
-		header:   header,
-		client:   &http.Client{},
+		narouURL:     config.NarouURL,
+		rankingLimit: config.RankingLimit,
+		header:       header,
+		client:       &http.Client{},
 	}
 }
 
@@ -147,7 +150,7 @@ func (c *NarouClient) GetRankingWithNovelAPI(bigGenre BigGenre, mode RankingMode
 
 	param := &url.Values{}
 	param.Add("biggenre", fmt.Sprintf("%d", bigGenre))
-	param.Add("lim", "100")
+	param.Add("lim", fmt.Sprintf("%d", c.rankingLimit))
 	param.Add("order", order)
 	param.Add("out", "json")
 

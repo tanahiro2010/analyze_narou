@@ -1,28 +1,22 @@
 package app
 
 import (
+	"analyze_narou/configs"
 	"analyze_narou/internal/analytics"
 	"analyze_narou/internal/client/discord"
 	"analyze_narou/internal/client/gpt"
 	"analyze_narou/internal/client/narou"
 	"analyze_narou/internal/logger"
 	"fmt"
-	"time"
-
-	"github.com/sashabaranov/go-openai"
 )
 
-type Config struct {
-	NarouUrl          string
-	OpenAIApiKey      string
-	DiscordWebhookURL string
-}
+type Config = configs.Config
 
 func Run(config Config, mode narou.RankingMode) {
 	var analyzer *analytics.Analyzer
 	if config.OpenAIApiKey != "" {
 		openaiClient := gpt.NewOpenAIClient(gpt.OpenAIConfig{
-			Model:  openai.GPT3Dot5Turbo,
+			Model:  config.OpenAIModel,
 			ApiKey: config.OpenAIApiKey,
 		})
 		analyzer = analytics.NewAnalyzer(openaiClient)
@@ -31,13 +25,14 @@ func Run(config Config, mode narou.RankingMode) {
 	}
 
 	narouClient := narou.NewNarouClient(narou.NarouConfig{
-		NarouURL:  config.NarouUrl,
-		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+		NarouURL:     config.NarouUrl,
+		UserAgent:    config.NarouUserAgent,
+		RankingLimit: config.NarouRankingLimit,
 	})
 
 	discordClient := discord.NewDiscordClient(discord.DiscordConfig{
 		WebhookURL: config.DiscordWebhookURL,
-		Timeout:    10 * time.Second,
+		Timeout:    config.DiscordTimeout,
 	})
 
 	log := logger.NewWebhookLogger(*discordClient)
