@@ -45,8 +45,20 @@ func Run(config Config, mode narou.RankingMode) {
 	var genreAnalyzeResult []analytics.GenreAnalyzeResult
 
 	for _, genre := range narou.BigGenres {
-		date := time.Date(2026, time.April, 1, 0, 0, 0, 0, time.UTC)
+		date := time.Now()
+		switch mode {
+		case narou.RankingModeWeekly:
+			date = date.AddDate(0, 0, -7)
+		case narou.RankingModeMonthly:
+			date = date.AddDate(0, -1, 0)
+		case narou.RankingModeQuarterly:
+			date = date.AddDate(0, -3, 0)
+		case narou.RankingModeYearly:
+			date = date.AddDate(-1, 0, 0)
+		}
 		formatedDate := fmt.Sprintf("%02d", date.Year()) + fmt.Sprintf("%02d", int(date.Month())) + fmt.Sprintf("%02d", date.Day())
+
+		fmt.Printf("Getting ranking for genre %s on date %s with mode %s\n", genre, formatedDate, mode)
 
 		ranking, err := narouClient.GetRanking(genre, formatedDate, mode)
 		if err != nil {
