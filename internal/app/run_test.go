@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"analyze_narou/internal/client/narou"
 )
@@ -26,8 +27,9 @@ func TestRunFetchesRankingsAndNovelsForEachBigGenre(t *testing.T) {
 			if got := r.URL.Query().Get("out"); got != "json" {
 				t.Fatalf("ranking out = %q, want json", got)
 			}
-			if got := r.URL.Query().Get("rtype"); got != "20260401-d" {
-				t.Fatalf("rtype = %q, want 20260401-d", got)
+			wantRType := time.Now().Format("20060102") + "-d"
+			if got := r.URL.Query().Get("rtype"); got != wantRType {
+				t.Fatalf("rtype = %q, want %s", got, wantRType)
 			}
 
 			bigGenre := r.URL.Query().Get("biggenre")
