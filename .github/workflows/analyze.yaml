@@ -1,0 +1,65 @@
+name: Analyze Narou Rankings
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Ranking period to analyze
+        required: true
+        default: daily
+        type: choice
+        options:
+          - daily
+          - weekly
+          - quarterly
+          - yearly
+  schedule:
+    # 09:05 JST every day.
+    - cron: "5 0 * * *"
+    # 09:15 JST every Monday.
+    - cron: "15 0 * * 1"
+    # 09:25 JST on the first day of each quarter.
+    - cron: "25 0 1 1,4,7,10 *"
+    # 09:35 JST on January 1.
+    - cron: "35 0 1 1 *"
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Select ranking mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            mode="${{ inputs.mode }}"
+          else
+            case "${{ github.event.schedule }}" in
+              "5 0 * * *") mode="daily" ;;
+              "15 0 * * 1") mode="weekly" ;;
+              "25 0 1 1,4,7,10 *") mode="quarterly" ;;
+              "35 0 1 1 *") mode="yearly" ;;
+              *) echo "Unsupported schedule: ${{ github.event.schedule }}" >&2; exit 1 ;;
+            esac
+          fi
+
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: go test ./...
+
+      - name: Analyze
+        env:
+          NAROU_URL: https://api.syosetu.com/
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: go run ./cmd/bot "${{ steps.mode.outputs.mode }}"
