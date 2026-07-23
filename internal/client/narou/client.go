@@ -68,7 +68,6 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 
 	defer httpResp.Body.Close()
 
-	novel := &Novel{}
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(httpResp.Body)
 	if err != nil {
@@ -76,18 +75,19 @@ func (c *NarouClient) GetNovel(ncode string) (*Novel, error) {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(buf.Bytes(), novel); err != nil {
+	response := &Response{}
+	if err := json.Unmarshal(buf.Bytes(), response); err != nil {
 		fmt.Printf("Error decoding JSON: %v\n", err)
 		return nil, err
 	}
 
-	err = novel.UnmarshalJSON(buf.Bytes())
-	if err != nil {
-		fmt.Printf("Error unmarshaling JSON: %v\n", err)
+	if len(response.Novels) == 0 {
+		err := fmt.Errorf("novel not found: %s", ncode)
+		fmt.Printf("Error decoding JSON: %v\n", err)
 		return nil, err
 	}
 
-	return novel, nil
+	return &response.Novels[0], nil
 }
 
 func (c *NarouClient) GetRanking(bigGenre BigGenre, startDate string, mode RankingMode) (*RankingResult, error) {
@@ -116,12 +116,6 @@ func (c *NarouClient) GetRanking(bigGenre BigGenre, startDate string, mode Ranki
 
 	if err := json.Unmarshal(buf.Bytes(), rankingResult); err != nil {
 		fmt.Printf("Error decoding JSON: %v\n", err)
-		return nil, err
-	}
-
-	err = rankingResult.UnmarshalJSON(buf.Bytes())
-	if err != nil {
-		fmt.Printf("Error unmarshaling JSON: %v\n", err)
 		return nil, err
 	}
 
