@@ -52,7 +52,7 @@ func TestRunFetchesRankingsAndNovelsForEachBigGenre(t *testing.T) {
 
 	Run(Config{
 		NarouUrl:          server.URL + "/",
-		OpenAIApiKey:      "test-key",
+		OpenAIApiKey:      "",
 		DiscordWebhookURL: "https://example.invalid/webhook",
 	}, narou.RankingModeDaily)
 
