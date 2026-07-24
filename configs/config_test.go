@@ -9,6 +9,7 @@ func TestLoadReadsEnvironment(t *testing.T) {
 	t.Setenv("NAROU_URL", "https://api.example.test/")
 	t.Setenv("NAROU_USER_AGENT", "test-agent")
 	t.Setenv("NAROU_RANKING_LIMIT", "50")
+	t.Setenv("GENRE_ANALYZE_CONCURRENCY", "3")
 	t.Setenv("DENI_API_KEY", "")
 	t.Setenv("OPENAI_API_KEY", "openai-key")
 	t.Setenv("OPENAI_BASE_URL", "https://api.example.test/v1")
@@ -28,6 +29,10 @@ func TestLoadReadsEnvironment(t *testing.T) {
 
 	if config.NarouRankingLimit != 50 {
 		t.Fatalf("NarouRankingLimit = %d", config.NarouRankingLimit)
+	}
+
+	if config.GenreAnalyzeConcurrency != 3 {
+		t.Fatalf("GenreAnalyzeConcurrency = %d", config.GenreAnalyzeConcurrency)
 	}
 
 	if config.OpenAIApiKey != "openai-key" {
@@ -55,6 +60,7 @@ func TestLoadUsesDefaults(t *testing.T) {
 	t.Setenv("NAROU_URL", "")
 	t.Setenv("NAROU_USER_AGENT", "")
 	t.Setenv("NAROU_RANKING_LIMIT", "")
+	t.Setenv("GENRE_ANALYZE_CONCURRENCY", "")
 	t.Setenv("DENI_API_KEY", "")
 	t.Setenv("OPENAI_API_KEY", "")
 	t.Setenv("OPENAI_BASE_URL", "")
@@ -73,6 +79,10 @@ func TestLoadUsesDefaults(t *testing.T) {
 
 	if config.NarouRankingLimit != DefaultNarouRankingLimit {
 		t.Fatalf("NarouRankingLimit = %d, want %d", config.NarouRankingLimit, DefaultNarouRankingLimit)
+	}
+
+	if config.GenreAnalyzeConcurrency != DefaultGenreAnalyzeConcurrency {
+		t.Fatalf("GenreAnalyzeConcurrency = %d, want %d", config.GenreAnalyzeConcurrency, DefaultGenreAnalyzeConcurrency)
 	}
 
 	if config.OpenAIModel != DefaultOpenAIModel {
@@ -101,12 +111,17 @@ func TestLoadReadsDeniAPIKeyBeforeOpenAIAPIKey(t *testing.T) {
 
 func TestLoadUsesDefaultsForInvalidValues(t *testing.T) {
 	t.Setenv("NAROU_RANKING_LIMIT", "not-an-int")
+	t.Setenv("GENRE_ANALYZE_CONCURRENCY", "not-an-int")
 	t.Setenv("DISCORD_TIMEOUT", "not-a-duration")
 
 	config := Load()
 
 	if config.NarouRankingLimit != DefaultNarouRankingLimit {
 		t.Fatalf("NarouRankingLimit = %d, want %d", config.NarouRankingLimit, DefaultNarouRankingLimit)
+	}
+
+	if config.GenreAnalyzeConcurrency != DefaultGenreAnalyzeConcurrency {
+		t.Fatalf("GenreAnalyzeConcurrency = %d, want %d", config.GenreAnalyzeConcurrency, DefaultGenreAnalyzeConcurrency)
 	}
 
 	if config.DiscordTimeout != DefaultDiscordTimeout {

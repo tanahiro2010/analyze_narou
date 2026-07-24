@@ -13,6 +13,8 @@ import (
 
 func TestRunFetchesRankingsWithNovelAPIForEachBigGenre(t *testing.T) {
 	var novelAPIRequests atomic.Int32
+	var activeNovelAPIRequests atomic.Int32
+	var maxActiveNovelAPIRequests atomic.Int32
 	var webhookRequests atomic.Int32
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +39,11 @@ func TestRunFetchesRankingsWithNovelAPIForEachBigGenre(t *testing.T) {
 				t.Fatal("biggenre is empty")
 			}
 
+			active := activeNovelAPIRequests.Add(1)
+			updateMaxAtomicInt32(&maxActiveNovelAPIRequests, active)
+			defer activeNovelAPIRequests.Add(-1)
+			time.Sleep(20 * time.Millisecond)
+
 			ncode := "N" + bigGenre
 			fmt.Fprintf(w, `[
 				{"allcount":1},
@@ -49,19 +56,36 @@ func TestRunFetchesRankingsWithNovelAPIForEachBigGenre(t *testing.T) {
 	defer server.Close()
 
 	Run(Config{
-		NarouUrl:          server.URL + "/",
-		NarouUserAgent:    "test",
-		NarouRankingLimit: 100,
-		OpenAIApiKey:      "",
-		DiscordWebhookURL: server.URL + "/webhook",
-		DiscordTimeout:    10 * time.Second,
+		NarouUrl:                server.URL + "/",
+		NarouUserAgent:          "test",
+		NarouRankingLimit:       100,
+		GenreAnalyzeConcurrency: 4,
+		OpenAIApiKey:            "",
+		DiscordWebhookURL:       server.URL + "/webhook",
+		DiscordTimeout:          10 * time.Second,
 	}, narou.RankingModeDaily)
 
 	if got := novelAPIRequests.Load(); got != int32(len(narou.BigGenres)) {
 		t.Fatalf("novel api requests = %d, want %d", got, len(narou.BigGenres))
 	}
 
+	if got := maxActiveNovelAPIRequests.Load(); got <= 1 {
+		t.Fatalf("max active novel api requests = %d, want concurrent requests", got)
+	}
+
 	if got := webhookRequests.Load(); got != int32(len(narou.BigGenres)+1) {
 		t.Fatalf("webhook requests = %d, want %d", got, len(narou.BigGenres)+1)
+	}
+}
+
+func updateMaxAtomicInt32(max *atomic.Int32, value int32) {
+	for {
+		current := max.Load()
+		if value <= current {
+			return
+		}
+		if max.CompareAndSwap(current, value) {
+			return
+		}
 	}
 }
