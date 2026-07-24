@@ -78,6 +78,15 @@ func TestRunFetchesRankingsWithNovelAPIForEachBigGenre(t *testing.T) {
 	}
 }
 
+func TestGenreLogNameIncludesNameAndCode(t *testing.T) {
+	got := genreLogName(narou.BigGenreFantasy)
+	want := "ファンタジー(2)"
+
+	if got != want {
+		t.Fatalf("genreLogName() = %q, want %q", got, want)
+	}
+}
+
 func updateMaxAtomicInt32(max *atomic.Int32, value int32) {
 	for {
 		current := max.Load()
