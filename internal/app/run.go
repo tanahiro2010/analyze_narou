@@ -38,6 +38,9 @@ func Run(config Config, mode narou.RankingMode) {
 	})
 
 	log := logger.NewWebhookLogger(*discordClient)
+	if err := log.H1(rankingModeLogTitle(mode)); err != nil {
+		fmt.Printf("Error logging analysis heading: %s\n", err)
+	}
 
 	concurrency := config.GenreAnalyzeConcurrency
 	if concurrency <= 0 {
@@ -121,4 +124,21 @@ func analyzeGenre(
 
 func genreLogName(genre narou.BigGenre) string {
 	return fmt.Sprintf("%s(%d)", genre.String(), genre)
+}
+
+func rankingModeLogTitle(mode narou.RankingMode) string {
+	switch mode {
+	case narou.RankingModeDaily:
+		return "デイリーランキング分析"
+	case narou.RankingModeWeekly:
+		return "ウィークリーランキング分析"
+	case narou.RankingModeMonthly:
+		return "月間ランキング分析"
+	case narou.RankingModeQuarterly:
+		return "四半期ランキング分析"
+	case narou.RankingModeYearly:
+		return "年間ランキング分析"
+	default:
+		return fmt.Sprintf("ランキング分析(%s)", mode)
+	}
 }

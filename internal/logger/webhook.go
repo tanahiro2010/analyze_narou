@@ -39,6 +39,10 @@ func (w *WebhookLogger) Log(message string) error {
 	return nil
 }
 
+func (w *WebhookLogger) H1(title string) error {
+	return w.Log("# " + title)
+}
+
 func (w *WebhookLogger) GenreAnalyzeResult(ctx analytics.GenreAnalyzeResult) error {
 	return w.send(discord.WebhookMessage{
 		Username: "Narou Analyzer",
