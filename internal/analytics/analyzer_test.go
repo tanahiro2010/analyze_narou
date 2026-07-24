@@ -263,7 +263,7 @@ func TestGenreAnalyzeAddsAIInsight(t *testing.T) {
 			Length:             100000,
 			EpisodeCount:       20,
 		},
-	})
+	}, narou.BigGenreFantasy.String())
 	if err != nil {
 		t.Fatalf("GenreAnalyze returned error: %v", err)
 	}
@@ -274,6 +274,22 @@ func TestGenreAnalyzeAddsAIInsight(t *testing.T) {
 
 	if !strings.Contains(chatClient.lastPrompt, "title_analysis") {
 		t.Fatalf("prompt = %q, want title_analysis", chatClient.lastPrompt)
+	}
+
+	if !strings.Contains(chatClient.lastPrompt, `"target_genre_name": "ファンタジー"`) {
+		t.Fatalf("prompt = %q, want target genre name", chatClient.lastPrompt)
+	}
+
+	if !strings.Contains(chatClient.lastPrompt, `"name": "ファンタジー"`) {
+		t.Fatalf("prompt = %q, want named big genre distribution", chatClient.lastPrompt)
+	}
+
+	if !strings.Contains(chatClient.lastPrompt, `"name": "ハイファンタジー〔ファンタジー〕"`) {
+		t.Fatalf("prompt = %q, want named genre distribution", chatClient.lastPrompt)
+	}
+
+	if result.TargetGenreName != "ファンタジー" {
+		t.Fatalf("TargetGenreName = %q, want ファンタジー", result.TargetGenreName)
 	}
 
 	if result.AIInsight.Summary != "上位作は導入と目的が明快です" {
@@ -325,6 +341,14 @@ func TestAllAnalyzeAddsAIInsight(t *testing.T) {
 
 	if !strings.Contains(chatClient.lastPrompt, "all_rankings") {
 		t.Fatalf("prompt = %q, want all_rankings", chatClient.lastPrompt)
+	}
+
+	if !strings.Contains(chatClient.lastPrompt, `"genre_summaries_with_names"`) {
+		t.Fatalf("prompt = %q, want named genre summaries", chatClient.lastPrompt)
+	}
+
+	if !strings.Contains(chatClient.lastPrompt, `"name": "ハイファンタジー〔ファンタジー〕"`) {
+		t.Fatalf("prompt = %q, want genre summary name", chatClient.lastPrompt)
 	}
 
 	if result.AIInsight.Summary != "全体傾向" {
