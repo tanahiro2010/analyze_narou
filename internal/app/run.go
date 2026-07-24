@@ -8,6 +8,7 @@ import (
 	"analyze_narou/internal/client/narou"
 	"analyze_narou/internal/logger"
 	"fmt"
+	"sync"
 )
 
 type Config = configs.Config
@@ -38,30 +39,40 @@ func Run(config Config, mode narou.RankingMode) {
 
 	log := logger.NewWebhookLogger(*discordClient)
 
-	var genreAnalyzeResult []analytics.GenreAnalyzeResult
+	concurrency := config.GenreAnalyzeConcurrency
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+
+	genreAnalyzeResults := make(chan analytics.GenreAnalyzeResult, len(narou.BigGenres))
+	semaphore := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
 
 	for _, genre := range narou.BigGenres {
-		fmt.Printf("Getting ranking for genre %s with mode %s\n", genre, mode)
+		genre := genre
+		wg.Add(1)
 
-		ranking, err := narouClient.GetRankingWithNovelAPI(genre, mode)
-		if err != nil {
-			fmt.Printf("Error getting ranking: %s\n", err)
-			fmt.Println("Continuing to next genre...")
-			continue
-		}
+		go func() {
+			defer wg.Done()
 
-		fmt.Printf("Ranking for genre %s: %+v\n", genre, *ranking)
+			semaphore <- struct{}{}
+			defer func() {
+				<-semaphore
+			}()
 
-		result, err := analyzer.GenreAnalyze(*ranking)
-		if err != nil {
-			fmt.Printf("Error analyzing genre %s: %s\n", genre, err)
-			continue
-		}
+			result, ok := analyzeGenre(genre, mode, narouClient, analyzer, log)
+			if ok {
+				genreAnalyzeResults <- result
+			}
+		}()
+	}
 
+	wg.Wait()
+	close(genreAnalyzeResults)
+
+	var genreAnalyzeResult []analytics.GenreAnalyzeResult
+	for result := range genreAnalyzeResults {
 		genreAnalyzeResult = append(genreAnalyzeResult, result)
-		if err := log.GenreAnalyzeResult(result); err != nil {
-			fmt.Printf("Error logging genre analysis result: %s\n", err)
-		}
 	}
 
 	allAnalyzeResult, err := analyzer.AllAnalyze(genreAnalyzeResult)
@@ -74,4 +85,35 @@ func Run(config Config, mode narou.RankingMode) {
 	if err := log.AllAnalyzeResult(allAnalyzeResult); err != nil {
 		fmt.Printf("Error logging all analysis result: %s\n", err)
 	}
+}
+
+func analyzeGenre(
+	genre narou.BigGenre,
+	mode narou.RankingMode,
+	narouClient *narou.NarouClient,
+	analyzer *analytics.Analyzer,
+	log *logger.WebhookLogger,
+) (analytics.GenreAnalyzeResult, bool) {
+	fmt.Printf("Getting ranking for genre %s with mode %s\n", genre, mode)
+
+	ranking, err := narouClient.GetRankingWithNovelAPI(genre, mode)
+	if err != nil {
+		fmt.Printf("Error getting ranking: %s\n", err)
+		fmt.Println("Continuing to next genre...")
+		return analytics.GenreAnalyzeResult{}, false
+	}
+
+	fmt.Printf("Ranking for genre %s: %+v\n", genre, *ranking)
+
+	result, err := analyzer.GenreAnalyze(*ranking)
+	if err != nil {
+		fmt.Printf("Error analyzing genre %s: %s\n", genre, err)
+		return analytics.GenreAnalyzeResult{}, false
+	}
+
+	if err := log.GenreAnalyzeResult(result); err != nil {
+		fmt.Printf("Error logging genre analysis result: %s\n", err)
+	}
+
+	return result, true
 }
