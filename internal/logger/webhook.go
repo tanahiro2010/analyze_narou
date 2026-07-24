@@ -205,6 +205,15 @@ func appendAIInsightFields(fields []discord.WebhookEmbedField, insight analytics
 	if len(insight.WritingAdvice) > 0 {
 		fields = append(fields, embedField("AI 執筆アドバイス", strings.Join(insight.WritingAdvice, "\n"), false))
 	}
+	if len(insight.RecommendedTags) > 0 {
+		fields = append(fields, embedField("AI おすすめタグ", formatAIList(insight.RecommendedTags, "tag"), false))
+	}
+	if len(insight.RecommendedTitles) > 0 {
+		fields = append(fields, embedField("AI おすすめタイトル", formatTitleSuggestions(insight.RecommendedTitles), false))
+	}
+	if len(insight.CreativeTips) > 0 {
+		fields = append(fields, embedField("AI 創作TIPS", formatCreativeTips(insight.CreativeTips), false))
+	}
 	if insight.UnavailableReason != "" {
 		fields = append(fields, embedField("AI 分析", "利用不可: "+insight.UnavailableReason, false))
 	}
@@ -236,6 +245,60 @@ func formatDiscordTags(tags []analytics.TagCount, limit int) string {
 	parts := make([]string, 0, len(tags))
 	for _, tag := range tags {
 		parts = append(parts, fmt.Sprintf("`%s` %d件", tag.Tag, tag.Count))
+	}
+
+	return strings.Join(parts, "\n")
+}
+
+func formatAIList(items []string, kind string) string {
+	parts := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+
+		switch kind {
+		case "tag":
+			parts = append(parts, fmt.Sprintf("`%s`", strings.TrimPrefix(item, "#")))
+		default:
+			parts = append(parts, fmt.Sprintf("- %s", item))
+		}
+	}
+
+	return strings.Join(parts, "\n")
+}
+
+func formatTitleSuggestions(suggestions []analytics.TitleSuggestion) string {
+	parts := make([]string, 0, len(suggestions))
+	for index, suggestion := range suggestions {
+		title := strings.TrimSpace(suggestion.Title)
+		if title == "" {
+			continue
+		}
+
+		value := fmt.Sprintf("%d. %s", index+1, title)
+		if strings.TrimSpace(suggestion.Rationale) != "" {
+			value += "\n   根拠: " + strings.TrimSpace(suggestion.Rationale)
+		}
+		parts = append(parts, value)
+	}
+
+	return strings.Join(parts, "\n")
+}
+
+func formatCreativeTips(tips []analytics.CreativeTip) string {
+	parts := make([]string, 0, len(tips))
+	for _, tip := range tips {
+		value := strings.TrimSpace(tip.Tip)
+		if value == "" {
+			continue
+		}
+
+		if strings.TrimSpace(tip.Source) != "" {
+			value += "\n  ソース: " + strings.TrimSpace(tip.Source)
+		}
+		parts = append(parts, "- "+value)
 	}
 
 	return strings.Join(parts, "\n")

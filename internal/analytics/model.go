@@ -39,8 +39,21 @@ type AIInsight struct {
 	TagAndGenre       string
 	ReaderSignal      string
 	WritingAdvice     []string
+	RecommendedTags   []string
+	RecommendedTitles []TitleSuggestion
+	CreativeTips      []CreativeTip
 	Raw               string
 	UnavailableReason string
+}
+
+type TitleSuggestion struct {
+	Title     string
+	Rationale string
+}
+
+type CreativeTip struct {
+	Tip    string
+	Source string
 }
 
 type BigGenreCount struct {

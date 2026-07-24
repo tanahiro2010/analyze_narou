@@ -241,7 +241,16 @@ func TestGenreAnalyzeAddsAIInsight(t *testing.T) {
 			"title_and_story":"長めのタイトルで売りを明示し、紹介文は対立まで書いています",
 			"tag_and_genre":"魔法と追放が読者期待を作っています",
 			"reader_signal":"ブックマーク比が高く、継続読書の訴求が強いです",
-			"writing_advice":["タイトルに強みを入れる","紹介文で目的を早く出す"]
+			"writing_advice":["タイトルに強みを入れる","紹介文で目的を早く出す"],
+			"recommended_tags":["異世界","追放","魔法"],
+			"recommended_titles":[
+				{"title":"追放魔法使いは辺境で成り上がる","rationale":"長文タイトル率と追放タグの強さを踏まえています"},
+				{"title":"弱小ギルドの魔法参謀","rationale":"目的・対立まで書く紹介文傾向に合わせています"}
+			],
+			"creative_tips":[
+				{"tip":"序盤で主人公の欠落を見せる","source":"代表作品サンプルに主人公の尖りが早く出ています"},
+				{"tip":"タグと紹介文の約束を揃える","source":"上位タグと紹介文の読者期待を接続しています"}
+			]
 		}`,
 	}
 	analyzer := NewAnalyzer(chatClient)
@@ -300,14 +309,36 @@ func TestGenreAnalyzeAddsAIInsight(t *testing.T) {
 		t.Fatalf("WritingAdvice = %+v, want 2 items", result.AIInsight.WritingAdvice)
 	}
 
+	if len(result.AIInsight.RecommendedTags) != 3 {
+		t.Fatalf("RecommendedTags = %+v, want 3 items", result.AIInsight.RecommendedTags)
+	}
+
+	if len(result.AIInsight.RecommendedTitles) != 2 {
+		t.Fatalf("RecommendedTitles = %+v, want 2 items", result.AIInsight.RecommendedTitles)
+	}
+	if result.AIInsight.RecommendedTitles[0].Rationale == "" {
+		t.Fatalf("RecommendedTitles = %+v, want rationale", result.AIInsight.RecommendedTitles)
+	}
+
+	if len(result.AIInsight.CreativeTips) != 2 {
+		t.Fatalf("CreativeTips = %+v, want 2 items", result.AIInsight.CreativeTips)
+	}
+	if result.AIInsight.CreativeTips[0].Source == "" {
+		t.Fatalf("CreativeTips = %+v, want source", result.AIInsight.CreativeTips)
+	}
+
 	if !strings.Contains(result.String(), "AI要約") {
 		t.Fatalf("String() = %q, want AI summary", result.String())
+	}
+
+	if !strings.Contains(result.String(), "AIおすすめタグ") {
+		t.Fatalf("String() = %q, want recommended tags", result.String())
 	}
 }
 
 func TestAllAnalyzeAddsAIInsight(t *testing.T) {
 	chatClient := &fakeChatClient{
-		content: `{"summary":"全体傾向","title_and_story":"タイトル傾向","tag_and_genre":"タグ傾向","reader_signal":"読者反応","writing_advice":["企画を絞る"]}`,
+		content: `{"summary":"全体傾向","title_and_story":"タイトル傾向","tag_and_genre":"タグ傾向","reader_signal":"読者反応","writing_advice":["企画を絞る"],"recommended_tags":["恋愛","学園"],"recommended_titles":[{"title":"週末だけの契約恋人","rationale":"恋愛タグとタイトル傾向を踏まえています"}],"creative_tips":[{"tip":"一話目で関係性の火種を置く","source":"ジャンル別タグと紹介文傾向に基づきます"}]}`,
 	}
 	analyzer := NewAnalyzer(chatClient)
 

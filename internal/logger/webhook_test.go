@@ -176,6 +176,59 @@ func TestGenreAnalyzeResultSendsFormattedSummary(t *testing.T) {
 	}
 }
 
+func TestGenreAnalyzeResultSendsAITipsAsDiscordEmbedFields(t *testing.T) {
+	gotMessage := sendAndCaptureMessage(t, func(logger *WebhookLogger) error {
+		return logger.GenreAnalyzeResult(analytics.GenreAnalyzeResult{
+			NovelCount: 1,
+			AIInsight: analytics.AIInsight{
+				Summary:         "AI summary",
+				RecommendedTags: []string{"#異世界", "追放", "魔法"},
+				RecommendedTitles: []analytics.TitleSuggestion{
+					{
+						Title:     "追放魔法使いは辺境で成り上がる",
+						Rationale: "長文タイトル率と追放タグの強さを踏まえています",
+					},
+					{
+						Title:     "弱小ギルドの魔法参謀",
+						Rationale: "目的・対立まで書く紹介文傾向に合わせています",
+					},
+				},
+				CreativeTips: []analytics.CreativeTip{
+					{
+						Tip:    "序盤で主人公の欠落を見せる",
+						Source: "代表作品サンプルに主人公の尖りが早く出ています",
+					},
+					{
+						Tip:    "タグと紹介文の約束を揃える",
+						Source: "上位タグと紹介文の読者期待を接続しています",
+					},
+				},
+			},
+		})
+	})
+
+	if len(gotMessage.Embeds) != 1 {
+		t.Fatalf("len(Embeds) = %d, want 1", len(gotMessage.Embeds))
+	}
+
+	embed := gotMessage.Embeds[0]
+	if !embedHasField(embed, "AI おすすめタグ", "`異世界`") {
+		t.Fatalf("embed fields = %+v, want recommended tags", embed.Fields)
+	}
+	if !embedHasField(embed, "AI おすすめタイトル", "1. 追放魔法使いは辺境で成り上がる") {
+		t.Fatalf("embed fields = %+v, want recommended titles", embed.Fields)
+	}
+	if !embedHasField(embed, "AI おすすめタイトル", "根拠: 長文タイトル率と追放タグの強さ") {
+		t.Fatalf("embed fields = %+v, want title rationale", embed.Fields)
+	}
+	if !embedHasField(embed, "AI 創作TIPS", "- 序盤で主人公の欠落を見せる") {
+		t.Fatalf("embed fields = %+v, want creative tips", embed.Fields)
+	}
+	if !embedHasField(embed, "AI 創作TIPS", "ソース: 代表作品サンプル") {
+		t.Fatalf("embed fields = %+v, want creative tip source", embed.Fields)
+	}
+}
+
 func TestGenreAnalyzeResultSendsLongSampleAsDiscordEmbed(t *testing.T) {
 	gotMessage := sendAndCaptureMessage(t, func(logger *WebhookLogger) error {
 		return logger.GenreAnalyzeResult(longSampleGenreAnalyzeResult())
@@ -213,6 +266,9 @@ func TestGenreAnalyzeResultSendsLongSampleAsDiscordEmbed(t *testing.T) {
 		"AI タグ・ジャンル分析",
 		"AI 読者反応分析",
 		"AI 執筆アドバイス",
+		"AI おすすめタグ",
+		"AI おすすめタイトル",
+		"AI 創作TIPS",
 	}
 	for _, name := range wantFields {
 		if !embedHasField(embed, name, "") {
@@ -246,7 +302,22 @@ func TestAllAnalyzeResultSendsFormattedSummary(t *testing.T) {
 				{Tag: "恋愛", Count: 1},
 			},
 			WritingHints: []string{"紹介文で目的を出す"},
-			AIInsight:    analytics.AIInsight{Summary: "All AI summary"},
+			AIInsight: analytics.AIInsight{
+				Summary:         "All AI summary",
+				RecommendedTags: []string{"恋愛", "学園"},
+				RecommendedTitles: []analytics.TitleSuggestion{
+					{
+						Title:     "週末だけの契約恋人",
+						Rationale: "恋愛タグとタイトル傾向を踏まえています",
+					},
+				},
+				CreativeTips: []analytics.CreativeTip{
+					{
+						Tip:    "一話目で関係性の火種を置く",
+						Source: "ジャンル別タグと紹介文傾向に基づきます",
+					},
+				},
+			},
 		})
 	})
 
@@ -269,6 +340,21 @@ func TestAllAnalyzeResultSendsFormattedSummary(t *testing.T) {
 
 	if !embedHasField(embed, "執筆ヒント", "紹介文で目的を出す") {
 		t.Fatalf("embed fields = %+v, want writing hints field", embed.Fields)
+	}
+	if !embedHasField(embed, "AI おすすめタグ", "`恋愛`") {
+		t.Fatalf("embed fields = %+v, want recommended tags", embed.Fields)
+	}
+	if !embedHasField(embed, "AI おすすめタイトル", "1. 週末だけの契約恋人") {
+		t.Fatalf("embed fields = %+v, want recommended titles", embed.Fields)
+	}
+	if !embedHasField(embed, "AI おすすめタイトル", "根拠: 恋愛タグ") {
+		t.Fatalf("embed fields = %+v, want recommended title rationale", embed.Fields)
+	}
+	if !embedHasField(embed, "AI 創作TIPS", "- 一話目で関係性の火種を置く") {
+		t.Fatalf("embed fields = %+v, want creative tips", embed.Fields)
+	}
+	if !embedHasField(embed, "AI 創作TIPS", "ソース: ジャンル別タグ") {
+		t.Fatalf("embed fields = %+v, want creative tip source", embed.Fields)
 	}
 }
 
@@ -391,6 +477,27 @@ func longSampleGenreAnalyzeResult() analytics.GenreAnalyzeResult {
 				"会話と状況進行でテンポを作る：会話率平均約38%という集計から、説明だけで押すより、掛け合いで情報提示・キャラ立て・次の目標設定を回す作りが受け入れられやすい示唆があります。特にVR/未来題材は用語説明が増えがちなので、会話・行動の中で小出しにすると離脱を抑えやすいです。",
 				"タグは“必須期待”と“差別化”を分けて設計する：401ならVRMMO/ゲームに加え、トーン（ほのぼの/シリアス）、装置（掲示板、近未来）、注意（R15/残酷）を整理して付けると、検索流入とミスマッチ低減の両方に寄与しやすいです。402なら未来/スペースオペラ/ロボット＋ミリタリー/ギャグ等で読み味を補足するのが自然です（ジャンル別タグ分布が比較的はっきりしているため）。",
 				"紹介文は『導入＋目的/面白さの軸＋最初の一歩』までで止める：深さ分布では“展開まで”が最多ですが、“結末まで”はほぼ無いので、ネタバレよりも「何が読めるのか」を具体化する方が主流です。例：主人公の制約（痛いのが嫌、悪徳領主を目指す等）→世界/システムの特徴→最初の目標（攻略、稼ぐ、仲間づくり）という順で、読み手がブクマ判断しやすい形にするのが無難です。",
+			},
+			RecommendedTags: []string{"VRMMO", "ゲーム", "掲示板", "攻略", "ほのぼの"},
+			RecommendedTitles: []analytics.TitleSuggestion{
+				{
+					Title:     "不遇ジョブの掲示板職人、攻略組の裏方で最強になる",
+					Rationale: "VRMMO、掲示板、攻略タグの強さを組み合わせています。",
+				},
+				{
+					Title:     "ログアウト不能の宇宙船で、俺だけ交易スキルが壊れている",
+					Rationale: "宇宙系タグと長期連載向きの成長導線を合わせています。",
+				},
+			},
+			CreativeTips: []analytics.CreativeTip{
+				{
+					Tip:    "第一話の終わりに、次回で試したくなるシステム上の謎を置く。",
+					Source: "ブックマーク寄与率が高く、継続読書の動機が重要だからです。",
+				},
+				{
+					Tip:    "タグで約束した楽しさを、紹介文の二文目までに見せる。",
+					Source: "上位タグ分布と紹介文深度の集計に基づきます。",
+				},
 			},
 		},
 	}

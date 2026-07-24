@@ -202,11 +202,24 @@ func buildGenreAIPrompt(result GenreAnalyzeResult) string {
 		"analysis_scope":    "genre_ranking",
 		"target_genre_name": result.TargetGenreName,
 		"required_output_json_schema": map[string]any{
-			"summary":         "ランキング全体の短い要約",
-			"title_and_story": "タイトルと小説紹介の傾向。どんなタイトルで、紹介文がどこまで書いているか",
-			"tag_and_genre":   "ジャンルごとのタグ分布から見える読者期待",
-			"reader_signal":   "ブックマーク率、平均評価、平均文字数などから読む読者反応",
-			"writing_advice":  []string{"執筆に使える具体的な示唆を3から5個"},
+			"summary":          "ランキング全体の短い要約",
+			"title_and_story":  "タイトルと小説紹介の傾向。どんなタイトルで、紹介文がどこまで書いているか",
+			"tag_and_genre":    "ジャンルごとのタグ分布から見える読者期待",
+			"reader_signal":    "ブックマーク率、平均評価、平均文字数などから読む読者反応",
+			"writing_advice":   []string{"執筆に使える具体的な示唆を3から5個"},
+			"recommended_tags": []string{"ランキング傾向から推奨できるタグを5から10個。既存上位タグと差別化タグを混ぜる"},
+			"recommended_titles": []map[string]string{
+				{
+					"title":     "このランキング傾向に合うタイトル案。3から5個返す",
+					"rationale": "そのタイトル案の根拠。タイトル文字数、タグ、紹介文傾向、読者反応のどれに基づくかを一文で書く",
+				},
+			},
+			"creative_tips": []map[string]string{
+				{
+					"tip":    "新作企画、導入、キャラ、紹介文改善に使える創作TIPS。3から5個返す",
+					"source": "そのTIPSのソース。集計値、上位タグ、代表作品サンプル、AI読解のどれに基づくかを一文で書く",
+				},
+			},
 		},
 		"metrics": map[string]any{
 			"novel_count":                          result.NovelCount,
@@ -327,11 +340,24 @@ func buildAllAIPrompt(result AllAnalyzeResult) string {
 	payload := map[string]any{
 		"analysis_scope": "all_rankings",
 		"required_output_json_schema": map[string]any{
-			"summary":         "全ジャンル横断の短い要約",
-			"title_and_story": "全体として強いタイトルと紹介文の見せ方",
-			"tag_and_genre":   "ジャンル別タグ分布と狙い目",
-			"reader_signal":   "ブックマーク率、平均評価、平均文字数などから読む読者反応",
-			"writing_advice":  []string{"新作企画や既存作改善に使える具体的な示唆を3から5個"},
+			"summary":          "全ジャンル横断の短い要約",
+			"title_and_story":  "全体として強いタイトルと紹介文の見せ方",
+			"tag_and_genre":    "ジャンル別タグ分布と狙い目",
+			"reader_signal":    "ブックマーク率、平均評価、平均文字数などから読む読者反応",
+			"writing_advice":   []string{"新作企画や既存作改善に使える具体的な示唆を3から5個"},
+			"recommended_tags": []string{"全体傾向から推奨できるタグを5から10個。汎用タグとジャンル別タグを混ぜる"},
+			"recommended_titles": []map[string]string{
+				{
+					"title":     "全体傾向を踏まえたタイトル案。3から5個返す",
+					"rationale": "そのタイトル案の根拠。横断タグ、ジャンル分布、読者反応、文字数傾向のどれに基づくかを一文で書く",
+				},
+			},
+			"creative_tips": []map[string]string{
+				{
+					"tip":    "企画選定、連載設計、紹介文、タグ設計に使える創作TIPS。3から5個返す",
+					"source": "そのTIPSのソース。集計値、ジャンル別タグ、代表作品サンプル、AI読解のどれに基づくかを一文で書く",
+				},
+			},
 		},
 		"metrics": map[string]any{
 			"genre_result_count":          result.GenreResultCount,
@@ -365,11 +391,14 @@ func firstChatContent(responses []openai.ChatCompletionResponse) string {
 
 func parseAIInsight(content string) (AIInsight, error) {
 	var payload struct {
-		Summary       string   `json:"summary"`
-		TitleAndStory string   `json:"title_and_story"`
-		TagAndGenre   string   `json:"tag_and_genre"`
-		ReaderSignal  string   `json:"reader_signal"`
-		WritingAdvice []string `json:"writing_advice"`
+		Summary           string            `json:"summary"`
+		TitleAndStory     string            `json:"title_and_story"`
+		TagAndGenre       string            `json:"tag_and_genre"`
+		ReaderSignal      string            `json:"reader_signal"`
+		WritingAdvice     []string          `json:"writing_advice"`
+		RecommendedTags   []string          `json:"recommended_tags"`
+		RecommendedTitles []TitleSuggestion `json:"recommended_titles"`
+		CreativeTips      []CreativeTip     `json:"creative_tips"`
 	}
 
 	if err := json.Unmarshal([]byte(stripJSONFence(content)), &payload); err != nil {
@@ -377,11 +406,14 @@ func parseAIInsight(content string) (AIInsight, error) {
 	}
 
 	return AIInsight{
-		Summary:       payload.Summary,
-		TitleAndStory: payload.TitleAndStory,
-		TagAndGenre:   payload.TagAndGenre,
-		ReaderSignal:  payload.ReaderSignal,
-		WritingAdvice: payload.WritingAdvice,
+		Summary:           payload.Summary,
+		TitleAndStory:     payload.TitleAndStory,
+		TagAndGenre:       payload.TagAndGenre,
+		ReaderSignal:      payload.ReaderSignal,
+		WritingAdvice:     payload.WritingAdvice,
+		RecommendedTags:   payload.RecommendedTags,
+		RecommendedTitles: payload.RecommendedTitles,
+		CreativeTips:      payload.CreativeTips,
 	}, nil
 }
 
@@ -977,9 +1009,50 @@ func appendAIInsight(builder *strings.Builder, insight AIInsight) {
 	if len(insight.WritingAdvice) > 0 {
 		fmt.Fprintf(builder, "AI執筆アドバイス: %s\n", strings.Join(insight.WritingAdvice, " / "))
 	}
+	if len(insight.RecommendedTags) > 0 {
+		fmt.Fprintf(builder, "AIおすすめタグ: %s\n", strings.Join(insight.RecommendedTags, " / "))
+	}
+	if len(insight.RecommendedTitles) > 0 {
+		fmt.Fprintf(builder, "AIおすすめタイトル: %s\n", formatTitleSuggestionsText(insight.RecommendedTitles))
+	}
+	if len(insight.CreativeTips) > 0 {
+		fmt.Fprintf(builder, "AI創作TIPS: %s\n", formatCreativeTipsText(insight.CreativeTips))
+	}
 	if insight.UnavailableReason != "" {
 		fmt.Fprintf(builder, "AI分析: 利用不可 (%s)\n", insight.UnavailableReason)
 	}
+}
+
+func formatTitleSuggestionsText(suggestions []TitleSuggestion) string {
+	parts := make([]string, 0, len(suggestions))
+	for _, suggestion := range suggestions {
+		if suggestion.Title == "" {
+			continue
+		}
+
+		value := suggestion.Title
+		if suggestion.Rationale != "" {
+			value += "（根拠: " + suggestion.Rationale + "）"
+		}
+		parts = append(parts, value)
+	}
+	return strings.Join(parts, " / ")
+}
+
+func formatCreativeTipsText(tips []CreativeTip) string {
+	parts := make([]string, 0, len(tips))
+	for _, tip := range tips {
+		if tip.Tip == "" {
+			continue
+		}
+
+		value := tip.Tip
+		if tip.Source != "" {
+			value += "（ソース: " + tip.Source + "）"
+		}
+		parts = append(parts, value)
+	}
+	return strings.Join(parts, " / ")
 }
 
 func formatTags(tags []TagCount, limit int) string {
