@@ -1,13 +1,16 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"analyze_narou/internal/client/discord"
 	"analyze_narou/internal/client/narou"
 )
 
@@ -16,10 +19,19 @@ func TestRunFetchesRankingsWithNovelAPIForEachBigGenre(t *testing.T) {
 	var activeNovelAPIRequests atomic.Int32
 	var maxActiveNovelAPIRequests atomic.Int32
 	var webhookRequests atomic.Int32
+	var webhookMessagesMu sync.Mutex
+	var webhookMessages []discord.WebhookMessage
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/webhook":
+			var message discord.WebhookMessage
+			if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
+				t.Fatalf("failed to decode webhook payload: %v", err)
+			}
+			webhookMessagesMu.Lock()
+			webhookMessages = append(webhookMessages, message)
+			webhookMessagesMu.Unlock()
 			webhookRequests.Add(1)
 			w.WriteHeader(http.StatusNoContent)
 		case "/novelapi/api/":
@@ -73,8 +85,15 @@ func TestRunFetchesRankingsWithNovelAPIForEachBigGenre(t *testing.T) {
 		t.Fatalf("max active novel api requests = %d, want concurrent requests", got)
 	}
 
-	if got := webhookRequests.Load(); got != int32(len(narou.BigGenres)+1) {
-		t.Fatalf("webhook requests = %d, want %d", got, len(narou.BigGenres)+1)
+	if got := webhookRequests.Load(); got != int32(len(narou.BigGenres)+2) {
+		t.Fatalf("webhook requests = %d, want %d", got, len(narou.BigGenres)+2)
+	}
+
+	webhookMessagesMu.Lock()
+	firstWebhookContent := webhookMessages[0].Content
+	webhookMessagesMu.Unlock()
+	if firstWebhookContent != "# デイリーランキング分析" {
+		t.Fatalf("first webhook content = %q, want daily h1", firstWebhookContent)
 	}
 }
 
@@ -84,6 +103,26 @@ func TestGenreLogNameIncludesNameAndCode(t *testing.T) {
 
 	if got != want {
 		t.Fatalf("genreLogName() = %q, want %q", got, want)
+	}
+}
+
+func TestRankingModeLogTitle(t *testing.T) {
+	tests := []struct {
+		mode narou.RankingMode
+		want string
+	}{
+		{mode: narou.RankingModeDaily, want: "デイリーランキング分析"},
+		{mode: narou.RankingModeWeekly, want: "ウィークリーランキング分析"},
+		{mode: narou.RankingModeQuarterly, want: "四半期ランキング分析"},
+		{mode: narou.RankingModeYearly, want: "年間ランキング分析"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.mode), func(t *testing.T) {
+			if got := rankingModeLogTitle(tt.mode); got != tt.want {
+				t.Fatalf("rankingModeLogTitle() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

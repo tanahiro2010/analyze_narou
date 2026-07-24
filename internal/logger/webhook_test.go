@@ -54,6 +54,16 @@ func TestLogSendsDiscordWebhookMessage(t *testing.T) {
 	}
 }
 
+func TestH1SendsDiscordMarkdownHeading(t *testing.T) {
+	gotContent := sendAndCaptureContent(t, func(logger *WebhookLogger) error {
+		return logger.H1("デイリーランキング分析")
+	})
+
+	if gotContent != "# デイリーランキング分析" {
+		t.Fatalf("Content = %q, want h1 heading", gotContent)
+	}
+}
+
 func TestLogSplitsLongDiscordMessages(t *testing.T) {
 	var gotMessages []discord.WebhookMessage
 
