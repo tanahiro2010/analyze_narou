@@ -3,6 +3,7 @@ package analytics
 import "analyze_narou/internal/client/narou"
 
 type GenreAnalyzeResult struct {
+	TargetGenreName        string
 	NovelCount             int
 	BigGenreDistribution   []BigGenreCount
 	GenreDistribution      []GenreCount
