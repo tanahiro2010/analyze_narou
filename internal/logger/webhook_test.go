@@ -133,7 +133,7 @@ func TestLogIgnoresEmptyMessage(t *testing.T) {
 }
 
 func TestGenreAnalyzeResultSendsFormattedSummary(t *testing.T) {
-	gotContent := sendAndCaptureContent(t, func(logger *WebhookLogger) error {
+	gotMessage := sendAndCaptureMessage(t, func(logger *WebhookLogger) error {
 		return logger.GenreAnalyzeResult(analytics.GenreAnalyzeResult{
 			NovelCount: 1,
 			TagDistribution: []analytics.TagCount{
@@ -143,17 +143,30 @@ func TestGenreAnalyzeResultSendsFormattedSummary(t *testing.T) {
 		})
 	})
 
-	if !strings.Contains(gotContent, "## ジャンル別ランキング分析") {
-		t.Fatalf("content = %q, want genre heading", gotContent)
+	if gotMessage.Content != "ジャンル別ランキング分析" {
+		t.Fatalf("Content = %q, want genre content", gotMessage.Content)
 	}
 
-	if !strings.Contains(gotContent, "AI要約: AI summary") {
-		t.Fatalf("content = %q, want AI summary", gotContent)
+	if len(gotMessage.Embeds) != 1 {
+		t.Fatalf("len(Embeds) = %d, want 1", len(gotMessage.Embeds))
+	}
+
+	embed := gotMessage.Embeds[0]
+	if embed.Title != "ジャンル別ランキング分析" {
+		t.Fatalf("embed title = %q, want genre heading", embed.Title)
+	}
+
+	if !strings.Contains(embed.Description, "AI要約") || !strings.Contains(embed.Description, "AI summary") {
+		t.Fatalf("description = %q, want AI summary", embed.Description)
+	}
+
+	if !embedHasField(embed, "上位タグ", "`異世界` 1件") {
+		t.Fatalf("embed fields = %+v, want tag field", embed.Fields)
 	}
 }
 
 func TestAllAnalyzeResultSendsFormattedSummary(t *testing.T) {
-	gotContent := sendAndCaptureContent(t, func(logger *WebhookLogger) error {
+	gotMessage := sendAndCaptureMessage(t, func(logger *WebhookLogger) error {
 		return logger.AllAnalyzeResult(analytics.AllAnalyzeResult{
 			GenreResultCount: 1,
 			NovelCount:       1,
@@ -165,16 +178,36 @@ func TestAllAnalyzeResultSendsFormattedSummary(t *testing.T) {
 		})
 	})
 
-	if !strings.Contains(gotContent, "## 全体ランキング分析") {
-		t.Fatalf("content = %q, want all heading", gotContent)
+	if gotMessage.Content != "全体ランキング分析" {
+		t.Fatalf("Content = %q, want all content", gotMessage.Content)
 	}
 
-	if !strings.Contains(gotContent, "AI要約: All AI summary") {
-		t.Fatalf("content = %q, want AI summary", gotContent)
+	if len(gotMessage.Embeds) != 1 {
+		t.Fatalf("len(Embeds) = %d, want 1", len(gotMessage.Embeds))
+	}
+
+	embed := gotMessage.Embeds[0]
+	if embed.Title != "全体ランキング分析" {
+		t.Fatalf("embed title = %q, want all heading", embed.Title)
+	}
+
+	if !strings.Contains(embed.Description, "AI要約") || !strings.Contains(embed.Description, "All AI summary") {
+		t.Fatalf("description = %q, want AI summary", embed.Description)
+	}
+
+	if !embedHasField(embed, "執筆ヒント", "紹介文で目的を出す") {
+		t.Fatalf("embed fields = %+v, want writing hints field", embed.Fields)
 	}
 }
 
 func sendAndCaptureContent(t *testing.T, send func(*WebhookLogger) error) string {
+	t.Helper()
+
+	message := sendAndCaptureMessage(t, send)
+	return message.Content
+}
+
+func sendAndCaptureMessage(t *testing.T, send func(*WebhookLogger) error) discord.WebhookMessage {
 	t.Helper()
 
 	var gotMessage discord.WebhookMessage
@@ -200,7 +233,17 @@ func sendAndCaptureContent(t *testing.T, send func(*WebhookLogger) error) string
 		t.Fatal("expected content")
 	}
 
-	return gotMessage.Content
+	return gotMessage
+}
+
+func embedHasField(embed discord.WebhookEmbed, name string, valuePart string) bool {
+	for _, field := range embed.Fields {
+		if field.Name == name && strings.Contains(field.Value, valuePart) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func TestSplitDiscordMessagePrefersNewline(t *testing.T) {
@@ -222,19 +265,19 @@ func TestSplitDiscordMessagePrefersNewline(t *testing.T) {
 }
 
 func TestWebhookLoggerMethodsReturnNil(t *testing.T) {
-	gotContent := sendAndCaptureContent(t, func(logger *WebhookLogger) error {
+	gotMessage := sendAndCaptureMessage(t, func(logger *WebhookLogger) error {
 		return logger.GenreAnalyzeResult(analytics.GenreAnalyzeResult{})
 	})
 
-	if !strings.Contains(gotContent, "作品数: 0") {
-		t.Fatalf("content = %q, want empty result summary", gotContent)
+	if len(gotMessage.Embeds) != 1 || !strings.Contains(gotMessage.Embeds[0].Description, "作品数: 0") {
+		t.Fatalf("message = %+v, want empty result summary", gotMessage)
 	}
 
-	gotContent = sendAndCaptureContent(t, func(logger *WebhookLogger) error {
+	gotMessage = sendAndCaptureMessage(t, func(logger *WebhookLogger) error {
 		return logger.AllAnalyzeResult(analytics.AllAnalyzeResult{})
 	})
 
-	if !strings.Contains(gotContent, "作品数: 0") {
-		t.Fatalf("content = %q, want empty result summary", gotContent)
+	if len(gotMessage.Embeds) != 1 || !strings.Contains(gotMessage.Embeds[0].Description, "作品数: 0") {
+		t.Fatalf("message = %+v, want empty result summary", gotMessage)
 	}
 }
