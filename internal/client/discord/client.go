@@ -19,9 +19,23 @@ type DiscordClient struct {
 }
 
 type WebhookMessage struct {
-	Username  string `json:"username"`
-	AvaterURL string `json:"avater_url"`
-	Content   string `json:"content"`
+	Username  string         `json:"username"`
+	AvaterURL string         `json:"avater_url"`
+	Content   string         `json:"content"`
+	Embeds    []WebhookEmbed `json:"embeds,omitempty"`
+}
+
+type WebhookEmbed struct {
+	Title       string              `json:"title,omitempty"`
+	Description string              `json:"description,omitempty"`
+	Color       int                 `json:"color,omitempty"`
+	Fields      []WebhookEmbedField `json:"fields,omitempty"`
+}
+
+type WebhookEmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Inline bool   `json:"inline"`
 }
 
 func NewDiscordClient(config DiscordConfig) *DiscordClient {
