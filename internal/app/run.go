@@ -94,26 +94,31 @@ func analyzeGenre(
 	analyzer *analytics.Analyzer,
 	log *logger.WebhookLogger,
 ) (analytics.GenreAnalyzeResult, bool) {
-	fmt.Printf("Getting ranking for genre %s with mode %s\n", genre, mode)
+	genreName := genreLogName(genre)
+	fmt.Printf("Getting ranking for genre %s with mode %s\n", genreName, mode)
 
 	ranking, err := narouClient.GetRankingWithNovelAPI(genre, mode)
 	if err != nil {
-		fmt.Printf("Error getting ranking: %s\n", err)
+		fmt.Printf("Error getting ranking for genre %s: %s\n", genreName, err)
 		fmt.Println("Continuing to next genre...")
 		return analytics.GenreAnalyzeResult{}, false
 	}
 
-	fmt.Printf("Ranking for genre %s: %+v\n", genre, *ranking)
+	fmt.Printf("Ranking for genre %s: %+v\n", genreName, *ranking)
 
-	result, err := analyzer.GenreAnalyze(*ranking)
+	result, err := analyzer.GenreAnalyze(*ranking, genre.String())
 	if err != nil {
-		fmt.Printf("Error analyzing genre %s: %s\n", genre, err)
+		fmt.Printf("Error analyzing genre %s: %s\n", genreName, err)
 		return analytics.GenreAnalyzeResult{}, false
 	}
 
 	if err := log.GenreAnalyzeResult(result); err != nil {
-		fmt.Printf("Error logging genre analysis result: %s\n", err)
+		fmt.Printf("Error logging genre analysis result for genre %s: %s\n", genreName, err)
 	}
 
 	return result, true
+}
+
+func genreLogName(genre narou.BigGenre) string {
+	return fmt.Sprintf("%s(%d)", genre.String(), genre)
 }

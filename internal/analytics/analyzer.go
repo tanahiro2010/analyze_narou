@@ -26,9 +26,12 @@ func NewAnalyzer(openAIClient ChatClient) *Analyzer {
 	}
 }
 
-func (a *Analyzer) GenreAnalyze(ctx []narou.Novel) (GenreAnalyzeResult, error) {
+func (a *Analyzer) GenreAnalyze(ctx []narou.Novel, targetGenreName ...string) (GenreAnalyzeResult, error) {
 	fmt.Printf("Analyzing %d novels...\n", len(ctx))
 	result := analyzeNovels(ctx)
+	if len(targetGenreName) > 0 {
+		result.TargetGenreName = targetGenreName[0]
+	}
 	a.enrichGenreWithAI(&result)
 	return result, nil
 }
@@ -196,7 +199,8 @@ func (a *Analyzer) askAI(userPrompt string) (AIInsight, error) {
 
 func buildGenreAIPrompt(result GenreAnalyzeResult) string {
 	payload := map[string]any{
-		"analysis_scope": "genre_ranking",
+		"analysis_scope":    "genre_ranking",
+		"target_genre_name": result.TargetGenreName,
 		"required_output_json_schema": map[string]any{
 			"summary":         "ランキング全体の短い要約",
 			"title_and_story": "タイトルと小説紹介の傾向。どんなタイトルで、紹介文がどこまで書いているか",
@@ -205,27 +209,118 @@ func buildGenreAIPrompt(result GenreAnalyzeResult) string {
 			"writing_advice":  []string{"執筆に使える具体的な示唆を3から5個"},
 		},
 		"metrics": map[string]any{
-			"novel_count":                result.NovelCount,
-			"big_genre_distribution":     result.BigGenreDistribution,
-			"genre_distribution":         result.GenreDistribution,
-			"title_analysis":             result.TitleStoryAnalysis.Title,
-			"story_analysis":             result.TitleStoryAnalysis.Story,
-			"top_tags":                   limitTags(result.TagDistribution, 15),
-			"tag_distribution_by_genre":  result.TagDistributionByGenre,
-			"bookmark_analysis":          result.BookmarkAnalysis,
-			"evaluation_analysis":        result.EvaluationAnalysis,
-			"length_analysis":            result.LengthAnalysis,
-			"point_analysis":             result.PointAnalysis,
-			"serialization_analysis":     result.SerializationAnalysis,
-			"dialogue_analysis":          result.DialogueAnalysis,
-			"representative_title_story": result.TitleStoryAnalysis.RepresentativeWork,
-			"average_rating_explanation": "AverageRatingPerEvaluator = 評価点合計 / 評価者数",
-			"bookmark_rate_explanation":  "BookmarkToEvaluatorRate = ブックマーク数 / 評価者数",
-			"bookmark_share_explanation": "BookmarkPointShare = ブックマーク由来ポイント推定 / 総合ポイント",
+			"novel_count":                          result.NovelCount,
+			"big_genre_distribution":               result.BigGenreDistribution,
+			"big_genre_distribution_with_names":    namedBigGenreCounts(result.BigGenreDistribution),
+			"genre_distribution":                   result.GenreDistribution,
+			"genre_distribution_with_names":        namedGenreCounts(result.GenreDistribution),
+			"title_analysis":                       result.TitleStoryAnalysis.Title,
+			"story_analysis":                       result.TitleStoryAnalysis.Story,
+			"top_tags":                             limitTags(result.TagDistribution, 15),
+			"tag_distribution_by_genre":            result.TagDistributionByGenre,
+			"tag_distribution_by_genre_with_names": namedGenreTagDistributions(result.TagDistributionByGenre),
+			"bookmark_analysis":                    result.BookmarkAnalysis,
+			"evaluation_analysis":                  result.EvaluationAnalysis,
+			"length_analysis":                      result.LengthAnalysis,
+			"point_analysis":                       result.PointAnalysis,
+			"serialization_analysis":               result.SerializationAnalysis,
+			"dialogue_analysis":                    result.DialogueAnalysis,
+			"representative_title_story":           result.TitleStoryAnalysis.RepresentativeWork,
+			"average_rating_explanation":           "AverageRatingPerEvaluator = 評価点合計 / 評価者数",
+			"bookmark_rate_explanation":            "BookmarkToEvaluatorRate = ブックマーク数 / 評価者数",
+			"bookmark_share_explanation":           "BookmarkPointShare = ブックマーク由来ポイント推定 / 総合ポイント",
 		},
 	}
 
 	return mustMarshalPrompt(payload)
+}
+
+type namedBigGenreCount struct {
+	Code  narou.BigGenre `json:"code"`
+	Name  string         `json:"name"`
+	Count int            `json:"count"`
+	Rate  float64        `json:"rate"`
+}
+
+type namedGenreCount struct {
+	Code  narou.Genre `json:"code"`
+	Name  string      `json:"name"`
+	Count int         `json:"count"`
+	Rate  float64     `json:"rate"`
+}
+
+type namedGenreTagDistribution struct {
+	Code  narou.Genre `json:"code"`
+	Name  string      `json:"name"`
+	Count int         `json:"count"`
+	Tags  []TagCount  `json:"tags"`
+}
+
+type namedGenreSummary struct {
+	Code                narou.Genre `json:"code"`
+	Name                string      `json:"name"`
+	NovelCount          int         `json:"novel_count"`
+	TopTags             []TagCount  `json:"top_tags"`
+	AverageBookmarkRate float64     `json:"average_bookmark_rate"`
+	AverageRating       float64     `json:"average_rating"`
+	AverageLength       float64     `json:"average_length"`
+	AverageGlobalPoint  float64     `json:"average_global_point"`
+}
+
+func namedBigGenreCounts(counts []BigGenreCount) []namedBigGenreCount {
+	results := make([]namedBigGenreCount, 0, len(counts))
+	for _, count := range counts {
+		results = append(results, namedBigGenreCount{
+			Code:  count.BigGenre,
+			Name:  count.BigGenre.String(),
+			Count: count.Count,
+			Rate:  count.Rate,
+		})
+	}
+	return results
+}
+
+func namedGenreCounts(counts []GenreCount) []namedGenreCount {
+	results := make([]namedGenreCount, 0, len(counts))
+	for _, count := range counts {
+		results = append(results, namedGenreCount{
+			Code:  count.Genre,
+			Name:  count.Genre.String(),
+			Count: count.Count,
+			Rate:  count.Rate,
+		})
+	}
+	return results
+}
+
+func namedGenreTagDistributions(distribution []GenreTagDistribution) []namedGenreTagDistribution {
+	results := make([]namedGenreTagDistribution, 0, len(distribution))
+	for _, item := range distribution {
+		results = append(results, namedGenreTagDistribution{
+			Code:  item.Genre,
+			Name:  item.Genre.String(),
+			Count: item.Count,
+			Tags:  item.Tags,
+		})
+	}
+	return results
+}
+
+func namedGenreSummaries(summaries []GenreSummary) []namedGenreSummary {
+	results := make([]namedGenreSummary, 0, len(summaries))
+	for _, summary := range summaries {
+		results = append(results, namedGenreSummary{
+			Code:                summary.Genre,
+			Name:                summary.Genre.String(),
+			NovelCount:          summary.NovelCount,
+			TopTags:             summary.TopTags,
+			AverageBookmarkRate: summary.AverageBookmarkRate,
+			AverageRating:       summary.AverageRating,
+			AverageLength:       summary.AverageLength,
+			AverageGlobalPoint:  summary.AverageGlobalPoint,
+		})
+	}
+	return results
 }
 
 func buildAllAIPrompt(result AllAnalyzeResult) string {
@@ -248,6 +343,7 @@ func buildAllAIPrompt(result AllAnalyzeResult) string {
 			"point_analysis":              result.PointAnalysis,
 			"serialization_analysis":      result.SerializationAnalysis,
 			"genre_summaries":             result.GenreSummaries,
+			"genre_summaries_with_names":  namedGenreSummaries(result.GenreSummaries),
 			"deterministic_writing_hints": result.WritingHints,
 		},
 	}
@@ -804,6 +900,9 @@ func (r GenreAnalyzeResult) String() string {
 	}
 
 	var builder strings.Builder
+	if r.TargetGenreName != "" {
+		fmt.Fprintf(&builder, "対象ジャンル: %s\n", r.TargetGenreName)
+	}
 	fmt.Fprintf(&builder, "作品数: %d\n", r.NovelCount)
 	fmt.Fprintf(&builder, "タイトル: 平均%.1f字 / 長文率%.1f%% / 疑問・感嘆符率%.1f%% / 括弧入り率%.1f%%\n",
 		r.TitleStoryAnalysis.Title.AverageLength,
