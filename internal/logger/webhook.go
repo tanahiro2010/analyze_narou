@@ -84,9 +84,10 @@ func (w *WebhookLogger) send(message discord.WebhookMessage) error {
 }
 
 func genreAnalyzeEmbed(ctx analytics.GenreAnalyzeResult) discord.WebhookEmbed {
+	title := genreAnalyzeTitle(ctx.TargetGenreName)
 	if ctx.NovelCount == 0 {
 		return discord.WebhookEmbed{
-			Title:       "ジャンル別ランキング分析",
+			Title:       title,
 			Description: "作品数: 0",
 			Color:       discordGenreColor,
 		}
@@ -128,11 +129,19 @@ func genreAnalyzeEmbed(ctx analytics.GenreAnalyzeResult) discord.WebhookEmbed {
 	fields = appendAIInsightFields(fields, ctx.AIInsight)
 
 	return discord.WebhookEmbed{
-		Title:       "ジャンル別ランキング分析",
+		Title:       title,
 		Description: aiSummaryDescription(ctx.AIInsight),
 		Color:       discordGenreColor,
 		Fields:      fields,
 	}
+}
+
+func genreAnalyzeTitle(targetGenreName string) string {
+	if targetGenreName == "" {
+		return "ジャンル別ランキング分析"
+	}
+
+	return "ジャンル別ランキング分析: " + targetGenreName
 }
 
 func allAnalyzeEmbed(ctx analytics.AllAnalyzeResult) discord.WebhookEmbed {
