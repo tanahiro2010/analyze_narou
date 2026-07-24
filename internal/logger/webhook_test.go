@@ -135,7 +135,8 @@ func TestLogIgnoresEmptyMessage(t *testing.T) {
 func TestGenreAnalyzeResultSendsFormattedSummary(t *testing.T) {
 	gotMessage := sendAndCaptureMessage(t, func(logger *WebhookLogger) error {
 		return logger.GenreAnalyzeResult(analytics.GenreAnalyzeResult{
-			NovelCount: 1,
+			TargetGenreName: "ファンタジー",
+			NovelCount:      1,
 			TagDistribution: []analytics.TagCount{
 				{Tag: "異世界", Count: 1},
 			},
@@ -152,7 +153,7 @@ func TestGenreAnalyzeResultSendsFormattedSummary(t *testing.T) {
 	}
 
 	embed := gotMessage.Embeds[0]
-	if embed.Title != "ジャンル別ランキング分析" {
+	if embed.Title != "ジャンル別ランキング分析: ファンタジー" {
 		t.Fatalf("embed title = %q, want genre heading", embed.Title)
 	}
 
